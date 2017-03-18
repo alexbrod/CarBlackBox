@@ -12,11 +12,14 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import alexbrod.carblackbox.utilities.MyUtilities;
+
 /**
  * Created by Alex Brod on 3/10/2017.
  */
 
 public class SensorsManagerService extends Service implements SensorEventListener {
+    public static final float SENSITIVITY_LEVEL = 7;
     private static int X = 0;
     private static int Y = 1;
     private static int Z = 2;
@@ -25,6 +28,8 @@ public class SensorsManagerService extends Service implements SensorEventListene
     private SensorManager mSensorManager;
     private Sensor mLinearAccelerationSensor;
 
+    //TODO: create seperate thread to process sensor data
+    //TODO: address application with broadcast messages
 
     public class LocalBinder extends Binder {
         public SensorsManagerService getService() {
@@ -73,8 +78,15 @@ public class SensorsManagerService extends Service implements SensorEventListene
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
-        mSensorsEventsListener.OnSensorChanged(sensorEvent.values[X],sensorEvent.values[Y],
-                sensorEvent.values[Z]);
+        float x = MyUtilities.roundUp(sensorEvent.values[X],1);
+        float y = MyUtilities.roundUp(sensorEvent.values[Y],1);
+        float z = MyUtilities.roundUp(sensorEvent.values[Z],1);
+        if(Math.abs(x) > SENSITIVITY_LEVEL){
+            mSensorsEventsListener.OnSensorXAccChanged(x,y,z);
+        }
+        if(Math.abs(z) > SENSITIVITY_LEVEL){
+            mSensorsEventsListener.OnSensorZAccChanged(x,y,z);
+        }
     }
 
     @Override
