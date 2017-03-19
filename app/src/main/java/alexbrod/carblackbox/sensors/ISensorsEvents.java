@@ -8,7 +8,7 @@ public interface ISensorsEvents {
 
     void OnSensorsMissing();
 
-    void OnSensorXAccChanged(float x, float y, float z);
-    void OnSensorYAccChanged(float x, float y, float z);
-    void OnSensorZAccChanged(float x, float y, float z);
+    void OnSensorXAccChanged(float x, float y, float z, long timestamp);
+    void OnSensorYAccChanged(float x, float y, float z, long timestamp);
+    void OnSensorZAccChanged(float x, float y, float z, long timestamp);
 }

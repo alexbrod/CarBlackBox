@@ -19,7 +19,7 @@ import alexbrod.carblackbox.utilities.MyUtilities;
  */
 
 public class SensorsManagerService extends Service implements SensorEventListener {
-    public static final float SENSITIVITY_LEVEL = 7;
+    public static final float SENSITIVITY_LEVEL = 4;
     private static int X = 0;
     private static int Y = 1;
     private static int Z = 2;
@@ -82,10 +82,10 @@ public class SensorsManagerService extends Service implements SensorEventListene
         float y = MyUtilities.roundUp(sensorEvent.values[Y],1);
         float z = MyUtilities.roundUp(sensorEvent.values[Z],1);
         if(Math.abs(x) > SENSITIVITY_LEVEL){
-            mSensorsEventsListener.OnSensorXAccChanged(x,y,z);
+            mSensorsEventsListener.OnSensorXAccChanged(x,y,z,sensorEvent.timestamp);
         }
         if(Math.abs(z) > SENSITIVITY_LEVEL){
-            mSensorsEventsListener.OnSensorZAccChanged(x,y,z);
+            mSensorsEventsListener.OnSensorZAccChanged(x,y,z,sensorEvent.timestamp);
         }
     }
 

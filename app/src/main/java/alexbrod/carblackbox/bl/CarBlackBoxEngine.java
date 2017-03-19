@@ -14,8 +14,6 @@ import alexbrod.carblackbox.sensors.ISensorsEvents;
 import alexbrod.carblackbox.sensors.SensorsManagerService;
 import alexbrod.carblackbox.ui.ICarBlackBoxEngineListener;
 
-import static android.R.attr.animation;
-
 /**
  * Created by Alex Brod on 3/13/2017.
  */
@@ -23,6 +21,10 @@ import static android.R.attr.animation;
 public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
 
     private static final long ACC_PEAK_DURATION = 1000; //ms
+    private static final float FORWARD_ACC_SENSITIVITY = 6;
+    private static final float BACK_ACC_SENSITIVITY = 5;
+    private static final float TURN_ACC_SENSITIVITY = 5;
+
     private static CarBlackBoxEngine carBlackBoxEngine;
     private SensorsManagerService mSensorsManagerService;
     private Vector<ICarBlackBoxEngineListener> mUiListeners;
@@ -91,11 +93,13 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
     }
 
     @Override
-    public void OnSensorXAccChanged(float x, float y, float z) {
+    public void OnSensorXAccChanged(float x, float y, float z, long timestamp) {
 
         //TODO: consider to start animation on separate thread
+        Log.w("X","General: (" + x + "," + y + "," + z + ")");
 
-        if(x >= (float)mLeftAccAnimation.getAnimatedValue() && x >= 0){
+        if(x >= (float)mLeftAccAnimation.getAnimatedValue() && x >= TURN_ACC_SENSITIVITY){
+            Log.w("X","Left: (" + x + "," + y + "," + z + ")");
             mLeftAccAnimation = ValueAnimator.ofFloat(x,0f);
             mLeftAccAnimation.setDuration(ACC_PEAK_DURATION);
             mLeftAccAnimation.start();
@@ -103,7 +107,8 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
                 l.OnSharpTurnLeft(x, y, z);
             }
         }
-        else if(x <= (float)mRightAccAnimation.getAnimatedValue() && x < 0){
+        else if(x <= (float)mRightAccAnimation.getAnimatedValue() && x < -TURN_ACC_SENSITIVITY){
+            Log.w("X","Right: (" + x + "," + y + "," + z + ")");
             mRightAccAnimation = ValueAnimator.ofFloat(z,0f);
             mRightAccAnimation.setDuration(ACC_PEAK_DURATION);
             mRightAccAnimation.start();
@@ -116,13 +121,15 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
     }
 
     @Override
-    public void OnSensorYAccChanged(float x, float y, float z) {
+    public void OnSensorYAccChanged(float x, float y, float z, long timestamp) {
 
     }
 
     @Override
-    public void OnSensorZAccChanged(float x, float y, float z) {
-        if(z >= (float)mForwardAccAnimation.getAnimatedValue() && z >= 0){
+    public void OnSensorZAccChanged(float x, float y, float z, long timestamp) {
+        Log.w("Z","General: (" + x + "," + y + "," + z + ")");
+        if(z >= (float)mForwardAccAnimation.getAnimatedValue() && z >= FORWARD_ACC_SENSITIVITY){
+            Log.w("Z","Forward: (" + x + "," + y + "," + z + ")");
             mForwardAccAnimation = ValueAnimator.ofFloat(z,0f);
             mForwardAccAnimation.setDuration(ACC_PEAK_DURATION);
             mForwardAccAnimation.start();
@@ -130,7 +137,8 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
                 l.OnSuddenBreak(x, y, z);
             }
         }
-        else if(z <= (float)mBackwardAccAnimation.getAnimatedValue() && z < 0){
+        else if(z <= (float)mBackwardAccAnimation.getAnimatedValue() && z < -BACK_ACC_SENSITIVITY){
+            Log.w("Z","Back: (" + x + "," + y + "," + z + ")");
             mBackwardAccAnimation = ValueAnimator.ofFloat(z,0f);
             mBackwardAccAnimation.setDuration(ACC_PEAK_DURATION);
             mBackwardAccAnimation.start();
