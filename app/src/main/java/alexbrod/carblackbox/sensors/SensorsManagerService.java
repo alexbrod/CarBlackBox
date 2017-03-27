@@ -47,9 +47,9 @@ public class SensorsManagerService extends Service implements SensorEventListene
             mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             mLinearAccelerationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
             mSensorManager.registerListener(this, mLinearAccelerationSensor, SensorManager.SENSOR_DELAY_GAME); // around 20ms
-            Log.w(this.getClass().getSimpleName(), "Registered SensorsManagerService to Sensor Event");
+            Log.d(this.getClass().getSimpleName(), "Registered SensorsManagerService to Sensor Event");
         }catch (NullPointerException e){
-            Log.w(this.getClass().getSimpleName(), "One or more sensors are not available");
+            Log.e(this.getClass().getSimpleName(), "One or more sensors are not available");
         }
     }
 
@@ -57,7 +57,7 @@ public class SensorsManagerService extends Service implements SensorEventListene
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.w(this.getClass().getSimpleName(),"In onBind");
+        Log.d(this.getClass().getSimpleName(),"In onBind");
 
         return mIBinder;
     }
@@ -66,7 +66,7 @@ public class SensorsManagerService extends Service implements SensorEventListene
 
     @Override
     public boolean onUnbind(Intent intent){
-        Log.w(this.getClass().getSimpleName(),"In onUnBind");
+        Log.d(this.getClass().getSimpleName(),"In onUnBind");
         super.onUnbind(intent);
         mSensorManager.unregisterListener(this);
         return false;
@@ -81,17 +81,20 @@ public class SensorsManagerService extends Service implements SensorEventListene
         float x = MyUtilities.roundUp(sensorEvent.values[X],1);
         float y = MyUtilities.roundUp(sensorEvent.values[Y],1);
         float z = MyUtilities.roundUp(sensorEvent.values[Z],1);
+        //convert timestamp from nano to micro
+        long timestamp = sensorEvent.timestamp/1000;
         if(Math.abs(x) > SENSITIVITY_LEVEL){
-            mSensorsEventsListener.OnSensorXAccChanged(x,y,z,sensorEvent.timestamp);
+
+            mSensorsEventsListener.OnSensorXAccChanged(x,y,z,timestamp);
         }
         if(Math.abs(z) > SENSITIVITY_LEVEL){
-            mSensorsEventsListener.OnSensorZAccChanged(x,y,z,sensorEvent.timestamp);
+            mSensorsEventsListener.OnSensorZAccChanged(x,y,z,timestamp);
         }
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
-        Log.w(this.getClass().getSimpleName(),"accuracy changed");
+        Log.d(this.getClass().getSimpleName(),"accuracy changed");
 
     }
 
@@ -100,6 +103,6 @@ public class SensorsManagerService extends Service implements SensorEventListene
             return;
         }
         mSensorsEventsListener = sensorsEventsListener;
-        Log.w(this.getClass().getSimpleName(),"Registered Engine to SensorsManagerService events");
+        Log.d(this.getClass().getSimpleName(),"Registered Engine to SensorsManagerService events");
     }
 }

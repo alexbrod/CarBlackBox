@@ -6,8 +6,8 @@ package alexbrod.carblackbox.ui;
 
 public interface ICarBlackBoxEngineListener {
 
-    void OnSuddenBreak(float x, float y, float z);
-    void OnSharpTurnLeft(float x, float y, float z);
-    void OnSharpTurnRight(float x, float y, float z);
-    void onSuddenAcceleration(float x, float y, float z);
+    void onSuddenBreak(float Acceleration);
+    void onSharpTurnLeft(float Acceleration);
+    void onSharpTurnRight(float Acceleration);
+    void onSuddenAcceleration(float Acceleration);
 }

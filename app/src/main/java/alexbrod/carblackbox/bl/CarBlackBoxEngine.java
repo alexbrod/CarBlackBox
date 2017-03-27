@@ -20,7 +20,7 @@ import alexbrod.carblackbox.ui.ICarBlackBoxEngineListener;
 
 public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
 
-    private static final long ACC_PEAK_DURATION = 1000; //ms
+    private static final long ACC_PEAK_DURATION = 1000000; //micro-sec
     private static final float FORWARD_ACC_SENSITIVITY = 6;
     private static final float BACK_ACC_SENSITIVITY = 5;
     private static final float TURN_ACC_SENSITIVITY = 5;
@@ -32,6 +32,22 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
     private ValueAnimator mRightAccAnimation;
     private ValueAnimator mForwardAccAnimation;
     private ValueAnimator mBackwardAccAnimation;
+    private float mPeakLeftAcc;
+    private float mPeakRightAcc;
+    private float mPeakForwardAcc;
+    private float mPeakBackAcc;
+    private boolean mIsMeasuringLeft = false;
+    private boolean mIsMeasuringRight = false;
+    private boolean mIsMeasuringForward = false;
+    private boolean mIsMeasuringBack = false;
+    private long mStartLeftTimestamp;
+    private long mEndLeftTimestamp;
+    private long mStartRightTimestamp;
+    private long mEndRightTimestamp;
+    private long mStartForwardTimestamp;
+    private long mEndForwardTimestamp;
+    private long mStartBackTimestamp;
+    private long mEndBackTimestamp;
 
     private CarBlackBoxEngine(){
         mSensorsManagerService = new SensorsManagerService();
@@ -96,24 +112,61 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
     public void OnSensorXAccChanged(float x, float y, float z, long timestamp) {
 
         //TODO: consider to start animation on separate thread
-        Log.w("X","General: (" + x + "," + y + "," + z + ")");
+        Log.w("X","General: " + timestamp + " (" + x + "," + y + "," + z + ")");
 
-        if(x >= (float)mLeftAccAnimation.getAnimatedValue() && x >= TURN_ACC_SENSITIVITY){
-            Log.w("X","Left: (" + x + "," + y + "," + z + ")");
-            mLeftAccAnimation = ValueAnimator.ofFloat(x,0f);
-            mLeftAccAnimation.setDuration(ACC_PEAK_DURATION);
-            mLeftAccAnimation.start();
-            for (ICarBlackBoxEngineListener l:mUiListeners) {
-                l.OnSharpTurnLeft(x, y, z);
+        if(x >= TURN_ACC_SENSITIVITY){ //check left turn start
+            Log.w("X","Crossed Left: " + timestamp + " (" + x + "," + y + "," + z + ")");
+            //start measuring
+            if(!mIsMeasuringLeft){
+                Log.w("X","Left Start measure: " + timestamp + " (" + x + "," + y + "," + z + ")");
+                mStartLeftTimestamp = timestamp;
+                mPeakLeftAcc = x;
+                mIsMeasuringLeft = true;
             }
-        }
-        else if(x <= (float)mRightAccAnimation.getAnimatedValue() && x < -TURN_ACC_SENSITIVITY){
-            Log.w("X","Right: (" + x + "," + y + "," + z + ")");
-            mRightAccAnimation = ValueAnimator.ofFloat(z,0f);
-            mRightAccAnimation.setDuration(ACC_PEAK_DURATION);
-            mRightAccAnimation.start();
-            for (ICarBlackBoxEngineListener l:mUiListeners) {
-                l.OnSharpTurnRight(x, y, z);
+            //save peak acceleration
+            if(x > mPeakLeftAcc){
+                mPeakLeftAcc = x;
+            }
+            //check that the deviation is not just noise
+            if(timestamp - mStartLeftTimestamp >= ACC_PEAK_DURATION){
+                Log.w("X","Left Alert: " + (timestamp - mStartLeftTimestamp) + " (" + x + "," + y + "," + z + ")");
+                for (ICarBlackBoxEngineListener l:mUiListeners) {
+                    l.onSharpTurnLeft(mPeakLeftAcc);
+                }
+            }
+        }else if(x < TURN_ACC_SENSITIVITY && x > 0){ //check left turn end
+            if(mIsMeasuringLeft){
+                Log.w("X","Left End measure: " + timestamp + " (" + x + "," + y + "," + z + ")");
+                //save peak end timestamp
+                mEndLeftTimestamp = timestamp;
+                mIsMeasuringLeft = false;
+            }
+        }else if(x <= -TURN_ACC_SENSITIVITY){ //check right turn start
+            Log.w("X","Crossed Right: " + timestamp + " (" + x + "," + y + "," + z + ")");
+            //start measuring
+            if(!mIsMeasuringRight){
+                Log.w("X","Right Start measure: " + timestamp + " (" + x + "," + y + "," + z + ")");
+                mStartRightTimestamp = timestamp;
+                mPeakRightAcc = x;
+                mIsMeasuringRight = true;
+            }
+            //save peak acceleration
+            if(x < mPeakRightAcc){
+                mPeakRightAcc = x;
+            }
+            //check that the deviation is not just noise
+            if(timestamp - mStartRightTimestamp >= ACC_PEAK_DURATION){
+                Log.w("X","Left Alert: " + (timestamp - mStartRightTimestamp) + " (" + x + "," + y + "," + z + ")");
+                for (ICarBlackBoxEngineListener l:mUiListeners) {
+                    l.onSharpTurnRight(mPeakRightAcc);
+                }
+            }
+        }else if(x > -TURN_ACC_SENSITIVITY && x < 0){ //check right turn end
+            if(mIsMeasuringRight){
+                Log.w("X","Left End measure: " + timestamp + " (" + x + "," + y + "," + z + ")");
+                //save peak end timestamp
+                mEndRightTimestamp = timestamp;
+                mIsMeasuringRight = false;
             }
         }
 
@@ -127,23 +180,61 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
 
     @Override
     public void OnSensorZAccChanged(float x, float y, float z, long timestamp) {
-        Log.w("Z","General: (" + x + "," + y + "," + z + ")");
-        if(z >= (float)mForwardAccAnimation.getAnimatedValue() && z >= FORWARD_ACC_SENSITIVITY){
-            Log.w("Z","Forward: (" + x + "," + y + "," + z + ")");
-            mForwardAccAnimation = ValueAnimator.ofFloat(z,0f);
-            mForwardAccAnimation.setDuration(ACC_PEAK_DURATION);
-            mForwardAccAnimation.start();
-            for (ICarBlackBoxEngineListener l:mUiListeners) {
-                l.OnSuddenBreak(x, y, z);
+        Log.w("Z","General: " + timestamp + " (" + x + "," + y + "," + z + ")");
+
+        if(z >= FORWARD_ACC_SENSITIVITY){ //check break start
+            Log.w("Z","Crossed Break: " + timestamp + " (" + x + "," + y + "," + z + ")");
+            //start measuring
+            if(!mIsMeasuringForward){
+                Log.w("Z","Break Start measure: " + timestamp + " (" + x + "," + y + "," + z + ")");
+                mStartForwardTimestamp = timestamp;
+                mPeakForwardAcc = z;
+                mIsMeasuringForward = true;
             }
-        }
-        else if(z <= (float)mBackwardAccAnimation.getAnimatedValue() && z < -BACK_ACC_SENSITIVITY){
-            Log.w("Z","Back: (" + x + "," + y + "," + z + ")");
-            mBackwardAccAnimation = ValueAnimator.ofFloat(z,0f);
-            mBackwardAccAnimation.setDuration(ACC_PEAK_DURATION);
-            mBackwardAccAnimation.start();
-            for (ICarBlackBoxEngineListener l:mUiListeners) {
-                l.onSuddenAcceleration(x, y, z);
+            //save peak acceleration
+            if(z > mPeakForwardAcc){
+                mPeakForwardAcc = z;
+            }
+            //check that the deviation is not just noise
+            if(timestamp - mStartForwardTimestamp >= ACC_PEAK_DURATION){
+                Log.w("Z","Break Alert: " + (timestamp - mStartForwardTimestamp) + " (" + x + "," + y + "," + z + ")");
+                for (ICarBlackBoxEngineListener l:mUiListeners) {
+                    l.onSuddenBreak(mPeakLeftAcc);
+                }
+            }
+        }else if(z < FORWARD_ACC_SENSITIVITY && z > 0){ //check break end
+            if(mIsMeasuringForward){
+                Log.w("Z","Break End measure: " + timestamp + " (" + x + "," + y + "," + z + ")");
+                //save peak end timestamp
+                mEndForwardTimestamp = timestamp;
+                mIsMeasuringForward = false;
+            }
+        }else if(z <= -BACK_ACC_SENSITIVITY){ //check acceleration start
+            Log.w("Z","Crossed Acc: " + timestamp + " (" + x + "," + y + "," + z + ")");
+            //start measuring
+            if(!mIsMeasuringBack){
+                Log.w("Z","Acc Start measure: " + timestamp + " (" + x + "," + y + "," + z + ")");
+                mStartBackTimestamp = timestamp;
+                mPeakBackAcc = z;
+                mIsMeasuringBack = true;
+            }
+            //save peak acceleration
+            if(z < mPeakBackAcc){
+                mPeakBackAcc = z;
+            }
+            //check that the deviation is not just noise
+            if(timestamp - mStartBackTimestamp >= ACC_PEAK_DURATION){
+                Log.w("Z","Acc Alert: " + (timestamp - mStartBackTimestamp) + " (" + x + "," + y + "," + z + ")");
+                for (ICarBlackBoxEngineListener l:mUiListeners) {
+                    l.onSuddenAcceleration(mPeakRightAcc);
+                }
+            }
+        }else if(z > -BACK_ACC_SENSITIVITY && z < 0){ //check acceleration end
+            if(mIsMeasuringBack){
+                Log.w("Z","Acc End measure: " + timestamp + " (" + x + "," + y + "," + z + ")");
+                //save peak end timestamp
+                mEndBackTimestamp = timestamp;
+                mIsMeasuringBack = false;
             }
         }
     }

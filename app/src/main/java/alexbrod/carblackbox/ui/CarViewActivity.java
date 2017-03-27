@@ -1,153 +1,129 @@
 package alexbrod.carblackbox.ui;
 
-import android.animation.ObjectAnimator;
-import android.app.Activity;
-import android.graphics.ColorFilter;
-import android.graphics.drawable.Drawable;
+import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 import alexbrod.carblackbox.R;
 import alexbrod.carblackbox.bl.CarBlackBoxEngine;
-import alexbrod.carblackbox.sensors.SensorsManagerService;
 
-public class CarViewActivity extends Activity implements ICarBlackBoxEngineListener{
-    private static final int ARC_MAX_RANGE = 5000;
-    private static final int ARC_MIN_RANGE = 1000;
-    private static final int ACC_MIN_RANGE = (int) SensorsManagerService.SENSITIVITY_LEVEL;
-    private static final int ACC_MAX_RANGE = 50;
-    private static final long ARC_ANIM_DURATION = 2500;
+public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEngineListener{
+
     private TextView mTvX;
     private TextView mTvY;
     private TextView mTvZ;
-    private TextView mTopArc;
-    private TextView mBottomArc;
-    private TextView mLeftArc;
-    private TextView mRightArc;
-    private Drawable mTopArcDrawable;
-    private Drawable mBottomArcDrawable;
-    private Drawable mLeftArcDrawable;
-    private Drawable mRightArcDrawable;
-    private CarBlackBoxEngine carBlackBoxEngine;
+    private Button mBtnCarView;
+    private Button mBtnMap;
+    private Button mBtnDashboard;
+    private CarBlackBoxEngine mCarBlackBoxEngine;
+    private CarViewFragment mCarViewFragment;
+    private ReportsMapFragment mReportsMapFragment;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_car_view);
-        carBlackBoxEngine = CarBlackBoxEngine.getInstance();
-
-        mTopArc = (TextView) findViewById(R.id.top_arc);
-        mBottomArc = (TextView) findViewById(R.id.bottom_arc);
-        mLeftArc = (TextView) findViewById(R.id.left_arc);
-        mRightArc = (TextView) findViewById(R.id.right_arc);
-
-        mTopArcDrawable = mTopArc.getBackground();
-        mBottomArcDrawable = mBottomArc.getBackground();
-        mLeftArcDrawable = mLeftArc.getBackground();
-        mRightArcDrawable = mRightArc.getBackground();
-
-
+        mCarBlackBoxEngine = CarBlackBoxEngine.getInstance();
 
         mTvX = (TextView)findViewById(R.id.tvX);
         mTvY = (TextView)findViewById(R.id.tvY);
         mTvZ = (TextView)findViewById(R.id.tvZ);
+
+        mBtnCarView = (Button)findViewById(R.id.btnCarView);
+        mBtnMap = (Button)findViewById(R.id.btnMapView);
+        mBtnDashboard = (Button)findViewById(R.id.btnDashboardView);
+
+
+        mCarViewFragment = CarViewFragment.newInstance();
+        mReportsMapFragment = ReportsMapFragment.newInstance();
+
+
+        initButton(mBtnCarView, mCarViewFragment);
+        initButton(mBtnMap, mReportsMapFragment);
+        replaceFragment(mCarViewFragment);
+
 
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        carBlackBoxEngine.bindToSensorsService(this);
+        mCarBlackBoxEngine.bindToSensorsService(this);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        carBlackBoxEngine.registerToEngineEvents(this);
+        mCarBlackBoxEngine.registerToEngineEvents(this);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        carBlackBoxEngine.unregisterFromEngineEvents(this);
+        mCarBlackBoxEngine.unregisterFromEngineEvents(this);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
-        carBlackBoxEngine.unbindFromSensorsService(this);
+        mCarBlackBoxEngine.unbindFromSensorsService(this);
+    }
+
+    //------------------------ Engine Events--------------------------
+
+    @Override
+    public void onSuddenBreak(float acceleration) {
+        mTvZ.setText(String.format("%.1f", acceleration));
+        mCarViewFragment.animateSuddenBreak(acceleration);
     }
 
     @Override
-    public void OnSuddenBreak(float x, float y, float z) {
-        mTvX.setText(String.format("%.1f",x));
-        mTvY.setText(String.format("%.1f",y));
-        mTvZ.setText(String.format("%.1f",z));
-
-        //scale a range [min,max] to [a,b]:
-        //         (b-a)(x - min)
-        //  f(x) = --------------  + a
-        //           max - min
-
-        int newZ = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int)z - ACC_MIN_RANGE)
-                /(ACC_MAX_RANGE - ACC_MIN_RANGE) + ARC_MIN_RANGE;
-        ObjectAnimator anim = ObjectAnimator.ofInt(mTopArcDrawable,"level",newZ , 0);
-        anim.setDuration(ARC_ANIM_DURATION);
-        anim.start();
+    public void onSharpTurnLeft(float acceleration) {
+        mTvX.setText(String.format("%.1f", acceleration));
+        mCarViewFragment.animateSharpTurnLeft(acceleration);
     }
 
     @Override
-    public void OnSharpTurnLeft(float x, float y, float z) {
-        mTvX.setText(String.format("%.1f",x));
-        mTvY.setText(String.format("%.1f",y));
-        mTvZ.setText(String.format("%.1f",z));
-
-        //scale a range [min,max] to [a,b]:
-        //         (b-a)(x - min)
-        //  f(x) = --------------  + a
-        //           max - min
-
-        int newX = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int)x - ACC_MIN_RANGE)
-                /(ACC_MAX_RANGE - ACC_MIN_RANGE) + ARC_MIN_RANGE;
-        ObjectAnimator anim = ObjectAnimator.ofInt(mLeftArcDrawable,"level",newX , 0);
-        anim.setDuration(ARC_ANIM_DURATION);
-        anim.start();
+    public void onSharpTurnRight(float acceleration) {
+        mTvX.setText(String.format("%.1f", acceleration));
+        mCarViewFragment.animateSharpTurnRight(acceleration);
     }
 
     @Override
-    public void OnSharpTurnRight(float x, float y, float z) {
-        mTvX.setText(String.format("%.1f",x));
-        mTvY.setText(String.format("%.1f",y));
-        mTvZ.setText(String.format("%.1f",z));
-
-        //scale a range [min,max] to [a,b]:
-        //         (b-a)(x - min)
-        //  f(x) = --------------  + a
-        //           max - min
-
-        int newX = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int)x + ACC_MIN_RANGE)
-                /(ACC_MIN_RANGE - ACC_MAX_RANGE) + ARC_MIN_RANGE;
-        ObjectAnimator anim = ObjectAnimator.ofInt(mRightArcDrawable,"level",newX , 0);
-        anim.setDuration(ARC_ANIM_DURATION);
-        anim.start();
+    public void onSuddenAcceleration(float acceleration) {
+        mTvZ.setText(String.format("%.1f", acceleration));
+        mCarViewFragment.animateSuddenAcceleration(acceleration);
     }
 
-    @Override
-    public void onSuddenAcceleration(float x, float y, float z) {
-        mTvX.setText(String.format("%.1f",x));
-        mTvY.setText(String.format("%.1f",y));
-        mTvZ.setText(String.format("%.1f",z));
+    //------------------------ Fragment Management ------------------------
 
-        //scale a range [min,max] to [a,b]:
-        //         (b-a)(x - min)
-        //  f(x) = --------------  + a
-        //           max - min
+    private void replaceFragment(Fragment fragment){
+        // Check that the activity is using the layout version with
+        // the fragment_container FrameLayout
+        if (findViewById(R.id.fragment_container) != null) {
+            // Add the fragment to the 'fragment_container' FrameLayout
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, fragment
+                            ,fragment.getClass().getSimpleName()).commit();
+        }
+        else{
+            Log.e(getClass().getSimpleName(),"No fragment container");
+        }
+    }
 
-        int newZ = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int)z + ACC_MIN_RANGE)
-                /(ACC_MIN_RANGE - ACC_MAX_RANGE) + ARC_MIN_RANGE;
-        ObjectAnimator anim = ObjectAnimator.ofInt(mBottomArcDrawable,"level",newZ , 0);
-        anim.setDuration(ARC_ANIM_DURATION);
-        anim.start();
+    //------------------------ Button Init -----------------------------
+
+    public void initButton(Button b, final Fragment fragment){
+        b.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                CarViewActivity.this.replaceFragment(fragment);
+            }
+        });
     }
 }
