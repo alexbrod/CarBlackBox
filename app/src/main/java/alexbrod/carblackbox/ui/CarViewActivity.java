@@ -1,5 +1,7 @@
 package alexbrod.carblackbox.ui;
 
+import android.content.IntentSender;
+import android.location.Location;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -7,6 +9,9 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+
+import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
 
 import alexbrod.carblackbox.R;
 import alexbrod.carblackbox.bl.CarBlackBoxEngine;
@@ -22,6 +27,7 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
     private CarBlackBoxEngine mCarBlackBoxEngine;
     private CarViewFragment mCarViewFragment;
     private ReportsMapFragment mReportsMapFragment;
+    private DashboardFragment mDashboardFragment;
 
 
     @Override
@@ -41,25 +47,29 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
 
         mCarViewFragment = CarViewFragment.newInstance();
         mReportsMapFragment = ReportsMapFragment.newInstance();
+        mDashboardFragment = DashboardFragment.newInstance();
 
 
         initButton(mBtnCarView, mCarViewFragment);
         initButton(mBtnMap, mReportsMapFragment);
+        initButton(mBtnDashboard,mDashboardFragment);
+
         replaceFragment(mCarViewFragment);
-
-
+        mCarBlackBoxEngine.initiateLocationManager(this);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
         mCarBlackBoxEngine.bindToSensorsService(this);
+        mCarBlackBoxEngine.startLocationManager();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         mCarBlackBoxEngine.registerToEngineEvents(this);
+
     }
 
     @Override
@@ -72,6 +82,8 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
     protected void onStop() {
         super.onStop();
         mCarBlackBoxEngine.unbindFromSensorsService(this);
+        mCarBlackBoxEngine.stopLocationManager();
+
     }
 
     //------------------------ Engine Events--------------------------
@@ -98,6 +110,33 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
     public void onSuddenAcceleration(float acceleration) {
         mTvZ.setText(String.format("%.1f", acceleration));
         mCarViewFragment.animateSuddenAcceleration(acceleration);
+        mDashboardFragment.updateAccelerometer(acceleration);
+    }
+
+    @Override
+    public void onLocationResolutionRequired(Status status) {
+        try {
+            // Show the dialog by calling startResolutionForResult(),
+            // and check the result in onActivityResult().
+            status.startResolutionForResult(
+                    this,
+                    LocationSettingsStatusCodes.RESOLUTION_REQUIRED);
+        } catch (IntentSender.SendIntentException e) {
+            Log.e(this.getClass().getSimpleName(),"Location resolution error");
+        }
+    }
+
+    @Override
+    public void onSpeedChanged(int speed) {
+        mTvY.setText(String.format("%d",speed));
+        mDashboardFragment.updateSpeedometer(speed);
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        if(mReportsMapFragment.isVisible()){
+            mReportsMapFragment.updateMapCameraView(location);
+        }
     }
 
     //------------------------ Fragment Management ------------------------

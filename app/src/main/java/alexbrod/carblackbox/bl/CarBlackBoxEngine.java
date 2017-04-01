@@ -5,12 +5,17 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.location.Location;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.google.android.gms.common.api.Status;
+
 import java.util.Vector;
 
+import alexbrod.carblackbox.sensors.ILocationManagerEvents;
 import alexbrod.carblackbox.sensors.ISensorsEvents;
+import alexbrod.carblackbox.sensors.LocationManager;
 import alexbrod.carblackbox.sensors.SensorsManagerService;
 import alexbrod.carblackbox.ui.ICarBlackBoxEngineListener;
 
@@ -18,7 +23,8 @@ import alexbrod.carblackbox.ui.ICarBlackBoxEngineListener;
  * Created by Alex Brod on 3/13/2017.
  */
 
-public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
+public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
+        ILocationManagerEvents {
 
     private static final long ACC_PEAK_DURATION = 1000000; //micro-sec
     private static final float FORWARD_ACC_SENSITIVITY = 6;
@@ -48,6 +54,7 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
     private long mEndForwardTimestamp;
     private long mStartBackTimestamp;
     private long mEndBackTimestamp;
+    private LocationManager locationManager;
 
     private CarBlackBoxEngine(){
         mSensorsManagerService = new SensorsManagerService();
@@ -239,4 +246,40 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection {
         }
     }
 
+    //-------------------------Location Management--------------------------------
+
+    public void initiateLocationManager(Context context){
+        locationManager = LocationManager.getInstance(context);
+    }
+
+    public void startLocationManager(){
+        locationManager.registerToLocationManagerEvents(this);
+        locationManager.connect();
+    }
+
+    public void stopLocationManager(){
+        locationManager.disconnect();
+        locationManager.unregisterFromLocationManagerEvents();
+    }
+
+    @Override
+    public void onLocationResolutionRequired(Status status) {
+        for (ICarBlackBoxEngineListener l:mUiListeners) {
+            l.onLocationResolutionRequired(status);
+        }
+    }
+
+    @Override
+    public void onSpeedChanged(int speed) {
+        for (ICarBlackBoxEngineListener l:mUiListeners) {
+            l.onSpeedChanged(speed);
+        }
+    }
+
+    @Override
+    public void onLocationChanged(Location location) {
+        for (ICarBlackBoxEngineListener l:mUiListeners) {
+            l.onLocationChanged(location);
+        }
+    }
 }

@@ -5,6 +5,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
@@ -12,11 +13,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.LatLng;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -54,10 +59,6 @@ public class ReportsMapFragment extends SupportMapFragment implements OnMapReady
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
-
-        Activity fragAct = getActivity();
-
-
         View v = inflater.inflate(R.layout.fragment_map_layout, container, false);
 
         mapView = (MapView) v.findViewById(R.id.mapView);
@@ -144,4 +145,8 @@ public class ReportsMapFragment extends SupportMapFragment implements OnMapReady
         map.setMyLocationEnabled(true);
     }
 
+    public void updateMapCameraView(Location location){
+        LatLng latLng = new LatLng(location.getLatitude(),location.getLongitude());
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng,16));
+    }
 }

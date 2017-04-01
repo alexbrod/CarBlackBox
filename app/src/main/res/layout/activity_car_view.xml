@@ -88,8 +88,7 @@
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="0.2"
-            android:textColor="@android:color/holo_red_dark"
-            android:text="0"/>
+            android:textColor="@android:color/holo_red_dark" />
 
         <TextView
             android:layout_width="0dp"
