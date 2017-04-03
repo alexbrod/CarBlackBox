@@ -6,9 +6,12 @@ package alexbrod.carblackbox.sensors;
 
 public interface ISensorsEvents {
 
-    void OnSensorsMissing();
+    void onSensorsMissing();
 
-    void OnSensorXAccChanged(float x, float y, float z, long timestamp);
-    void OnSensorYAccChanged(float x, float y, float z, long timestamp);
-    void OnSensorZAccChanged(float x, float y, float z, long timestamp);
+    void onXNegativeAccChange(float x, float y, float z, long timestamp);
+    void onYNegativeAccChange(float x, float y, float z, long timestamp);
+    void onZNegativeAccChange(float x, float y, float z, long timestamp);
+    void onXPositiveAccChange(float x, float y, float z, long timestamp);
+    void onYPositiveAccChange(float x, float y, float z, long timestamp);
+    void onZPositiveAccChange(float x, float y, float z, long timestamp);
 }

@@ -19,7 +19,7 @@ import alexbrod.carblackbox.utilities.MyUtilities;
  */
 
 public class SensorsManagerService extends Service implements SensorEventListener {
-    public static final float SENSITIVITY_LEVEL = 4;
+    public static final float SENSITIVITY_LEVEL = 1; //Acceleration
     private static int X = 0;
     private static int Y = 1;
     private static int Z = 2;
@@ -46,7 +46,7 @@ public class SensorsManagerService extends Service implements SensorEventListene
         try {
             mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             mLinearAccelerationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
-            mSensorManager.registerListener(this, mLinearAccelerationSensor, SensorManager.SENSOR_DELAY_GAME); // around 20ms
+            mSensorManager.registerListener(this, mLinearAccelerationSensor, SensorManager.SENSOR_DELAY_GAME);
             Log.d(this.getClass().getSimpleName(), "Registered SensorsManagerService to Sensor Event");
         }catch (NullPointerException e){
             Log.e(this.getClass().getSimpleName(), "One or more sensors are not available");
@@ -83,12 +83,15 @@ public class SensorsManagerService extends Service implements SensorEventListene
         float z = MyUtilities.roundUp(sensorEvent.values[Z],1);
         //convert timestamp from nano to micro
         long timestamp = sensorEvent.timestamp/1000;
-        if(Math.abs(x) > SENSITIVITY_LEVEL){
-
-            mSensorsEventsListener.OnSensorXAccChanged(x,y,z,timestamp);
+        if(x < -SENSITIVITY_LEVEL){
+            mSensorsEventsListener.onXNegativeAccChange(x,y,z,timestamp);
+        }else if(x > SENSITIVITY_LEVEL){
+            mSensorsEventsListener.onXPositiveAccChange(x,y,z,timestamp);
         }
-        if(Math.abs(z) > SENSITIVITY_LEVEL){
-            mSensorsEventsListener.OnSensorZAccChanged(x,y,z,timestamp);
+        if(z < -SENSITIVITY_LEVEL){
+            mSensorsEventsListener.onZNegativeAccChange(x,y,z,timestamp);
+        }else if(z > SENSITIVITY_LEVEL){
+            mSensorsEventsListener.onZPositiveAccChange(x,y,z,timestamp);
         }
     }
 

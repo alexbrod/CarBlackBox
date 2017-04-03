@@ -78,52 +78,52 @@ public class CarViewFragment extends Fragment  {
     //------------------------ Engine Events--------------------------
 
 
-    public void animateSuddenBreak(float Acceleration) {
+    public void animateSuddenBreak(float acceleration) {
         //scale a range [min,max] to [a,b]:
         //         (b-a)(x - min)
         //  f(x) = --------------  + a
         //           max - min
 
-        int newZ = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int)Acceleration - ACC_MIN_RANGE)
+        int newZ = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int)acceleration - ACC_MIN_RANGE)
                 /(ACC_MAX_RANGE - ACC_MIN_RANGE) + ARC_MIN_RANGE;
         ObjectAnimator anim = ObjectAnimator.ofInt(mTopArcDrawable,"level",newZ , 0);
         anim.setDuration(ARC_ANIM_DURATION);
         anim.start();
     }
 
-    public void animateSharpTurnLeft(float Acceleration) {
+    public void animateSharpTurnLeft(float acceleration) {
         //scale a range [min,max] to [a,b]:
         //         (b-a)(x - min)
         //  f(x) = --------------  + a
         //           max - min
 
-        int newX = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int) Acceleration - ACC_MIN_RANGE)
+        int newX = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int) acceleration - ACC_MIN_RANGE)
                 /(ACC_MAX_RANGE - ACC_MIN_RANGE) + ARC_MIN_RANGE;
         ObjectAnimator anim = ObjectAnimator.ofInt(mLeftArcDrawable,"level",newX , 0);
         anim.setDuration(ARC_ANIM_DURATION);
         anim.start();
     }
 
-    public void animateSharpTurnRight(float Acceleration) {
+    public void animateSharpTurnRight(float acceleration) {
         //scale a range [min,max] to [a,b]:
         //         (b-a)(x - min)
         //  f(x) = --------------  + a
         //           max - min
 
-        int newX = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int) Acceleration + ACC_MIN_RANGE)
+        int newX = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int) acceleration + ACC_MIN_RANGE)
                 /(ACC_MIN_RANGE - ACC_MAX_RANGE) + ARC_MIN_RANGE;
         ObjectAnimator anim = ObjectAnimator.ofInt(mRightArcDrawable,"level",newX , 0);
         anim.setDuration(ARC_ANIM_DURATION);
         anim.start();
     }
 
-    public void animateSuddenAcceleration(float Acceleration) {
+    public void animateSuddenAcceleration(float acceleration) {
         //scale a range [min,max] to [a,b]:
         //         (b-a)(x - min)
         //  f(x) = --------------  + a
         //           max - min
 
-        int newZ = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int)Acceleration + ACC_MIN_RANGE)
+        int newZ = (ARC_MAX_RANGE - ARC_MIN_RANGE)*((int)acceleration + ACC_MIN_RANGE)
                 /(ACC_MIN_RANGE - ACC_MAX_RANGE) + ARC_MIN_RANGE;
         ObjectAnimator anim = ObjectAnimator.ofInt(mBottomArcDrawable,"level",newZ , 0);
         anim.setDuration(ARC_ANIM_DURATION);

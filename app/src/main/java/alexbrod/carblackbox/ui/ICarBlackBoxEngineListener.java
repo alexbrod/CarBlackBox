@@ -10,12 +10,13 @@ import com.google.android.gms.common.api.Status;
 
 public interface ICarBlackBoxEngineListener {
 
-    void onSuddenBreak(float Acceleration);
-    void onSharpTurnLeft(float Acceleration);
-    void onSharpTurnRight(float Acceleration);
-    void onSuddenAcceleration(float Acceleration);
+    void onSuddenBreak(float acceleration);
+    void onSharpTurnLeft(float acceleration);
+    void onSharpTurnRight(float acceleration);
+    void onSuddenAcceleration(float acceleration);
     void onLocationResolutionRequired(Status status);
     void onSpeedChanged(int speed);
     void onLocationChanged(Location location);
 
+    void onCarAcceleration(float acceleration);
 }

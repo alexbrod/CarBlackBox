@@ -99,7 +99,7 @@ public class DashboardFragment extends Fragment {
     }
 
     public void updateAccelerometer(double acceleration) {
-        mAccelerometer.setSpeed(Math.abs(acceleration),500,0);
+        mAccelerometer.setSpeed(Math.abs(acceleration),100,0);
         //TODO:Make acceleration go back to zero
     }
 }

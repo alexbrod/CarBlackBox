@@ -2,6 +2,7 @@ package alexbrod.carblackbox.ui;
 
 import android.content.IntentSender;
 import android.location.Location;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -18,6 +19,7 @@ import alexbrod.carblackbox.bl.CarBlackBoxEngine;
 
 public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEngineListener{
 
+    private static final String TAG = "CarViewActivity";
     private TextView mTvX;
     private TextView mTvY;
     private TextView mTvZ;
@@ -59,15 +61,21 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
+    protected void onPostCreate(@Nullable Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
         mCarBlackBoxEngine.bindToSensorsService(this);
         mCarBlackBoxEngine.startLocationManager();
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
+        Log.i(TAG,"onResume");
         mCarBlackBoxEngine.registerToEngineEvents(this);
 
     }
@@ -75,15 +83,21 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
     @Override
     protected void onPause() {
         super.onPause();
-        mCarBlackBoxEngine.unregisterFromEngineEvents(this);
+        Log.i(TAG,"onPause");
+        mCarBlackBoxEngine.unregisterFromEngineEvents();
     }
 
     @Override
     protected void onStop() {
         super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.i(TAG,"onDestroy");
         mCarBlackBoxEngine.unbindFromSensorsService(this);
         mCarBlackBoxEngine.stopLocationManager();
-
     }
 
     //------------------------ Engine Events--------------------------
@@ -110,7 +124,7 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
     public void onSuddenAcceleration(float acceleration) {
         mTvZ.setText(String.format("%.1f", acceleration));
         mCarViewFragment.animateSuddenAcceleration(acceleration);
-        mDashboardFragment.updateAccelerometer(acceleration);
+
     }
 
     @Override
@@ -129,13 +143,22 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
     @Override
     public void onSpeedChanged(int speed) {
         mTvY.setText(String.format("%d",speed));
-        mDashboardFragment.updateSpeedometer(speed);
+        if(mDashboardFragment.isVisible()){
+            mDashboardFragment.updateSpeedometer(speed);
+        }
     }
 
     @Override
     public void onLocationChanged(Location location) {
         if(mReportsMapFragment.isVisible()){
             mReportsMapFragment.updateMapCameraView(location);
+        }
+    }
+
+    @Override
+    public void onCarAcceleration(float acceleration) {
+        if(mDashboardFragment.isVisible()){
+            mDashboardFragment.updateAccelerometer(acceleration);
         }
     }
 
