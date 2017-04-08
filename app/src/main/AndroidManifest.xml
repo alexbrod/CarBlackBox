@@ -47,7 +47,7 @@
         </activity>
         <activity
             android:name=".ui.CarViewActivity"
-            android:screenOrientation="portrait" >
+            android:screenOrientation="portrait">
 
         </activity>
     </application>

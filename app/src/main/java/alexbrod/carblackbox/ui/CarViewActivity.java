@@ -11,13 +11,19 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.facebook.stetho.Stetho;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
 import alexbrod.carblackbox.R;
 import alexbrod.carblackbox.bl.CarBlackBoxEngine;
 
-public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEngineListener{
+import static alexbrod.carblackbox.utilities.MyUtilities.SHARP_TURN;
+import static alexbrod.carblackbox.utilities.MyUtilities.SPEEDING;
+import static alexbrod.carblackbox.utilities.MyUtilities.SUDDEN_BRAKE;
+
+public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEngineListener,
+        ReportsMapFragment.IMapFragmentEvents{
 
     private static final String TAG = "CarViewActivity";
     private TextView mTvX;
@@ -30,6 +36,7 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
     private CarViewFragment mCarViewFragment;
     private ReportsMapFragment mReportsMapFragment;
     private DashboardFragment mDashboardFragment;
+    private boolean mMapFragmetReady;
 
 
     @Override
@@ -51,12 +58,14 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
         mReportsMapFragment = ReportsMapFragment.newInstance();
         mDashboardFragment = DashboardFragment.newInstance();
 
+        mReportsMapFragment.registerToMapfragmentEvents(this);
 
         initButton(mBtnCarView, mCarViewFragment);
         initButton(mBtnMap, mReportsMapFragment);
         initButton(mBtnDashboard,mDashboardFragment);
 
         replaceFragment(mCarViewFragment);
+        mCarBlackBoxEngine.connectDb(this);
         mCarBlackBoxEngine.initiateLocationManager(this);
     }
 
@@ -65,6 +74,14 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
         super.onPostCreate(savedInstanceState);
         mCarBlackBoxEngine.bindToSensorsService(this);
         mCarBlackBoxEngine.startLocationManager();
+        //for inspecting sqlite db from chrome://inspect
+        Stetho.initialize(
+                Stetho.newInitializerBuilder(this)
+                        .enableDumpapp(
+                                Stetho.defaultDumperPluginsProvider(this))
+                        .enableWebKitInspector(
+                                Stetho.defaultInspectorModulesProvider(this))
+                        .build());
     }
 
     @Override
@@ -98,30 +115,34 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
         Log.i(TAG,"onDestroy");
         mCarBlackBoxEngine.unbindFromSensorsService(this);
         mCarBlackBoxEngine.stopLocationManager();
+        mCarBlackBoxEngine.disconnectDb();
     }
 
     //------------------------ Engine Events--------------------------
 
     @Override
-    public void onSuddenBreak(float acceleration) {
+    public void onSuddenBreak(float acceleration, Location location) {
         mTvZ.setText(String.format("%.1f", acceleration));
         mCarViewFragment.animateSuddenBreak(acceleration);
+        mReportsMapFragment.addReport(SUDDEN_BRAKE, acceleration, location);
     }
 
     @Override
-    public void onSharpTurnLeft(float acceleration) {
+    public void onSharpTurnLeft(float acceleration, Location location) {
         mTvX.setText(String.format("%.1f", acceleration));
         mCarViewFragment.animateSharpTurnLeft(acceleration);
+        mReportsMapFragment.addReport(SHARP_TURN, acceleration, location);
     }
 
     @Override
-    public void onSharpTurnRight(float acceleration) {
+    public void onSharpTurnRight(float acceleration, Location location) {
         mTvX.setText(String.format("%.1f", acceleration));
         mCarViewFragment.animateSharpTurnRight(acceleration);
+        mReportsMapFragment.addReport(SHARP_TURN, acceleration, location);
     }
 
     @Override
-    public void onSuddenAcceleration(float acceleration) {
+    public void onSuddenAcceleration(float acceleration, Location location) {
         mTvZ.setText(String.format("%.1f", acceleration));
         mCarViewFragment.animateSuddenAcceleration(acceleration);
 
@@ -150,16 +171,19 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
 
     @Override
     public void onLocationChanged(Location location) {
-        if(mReportsMapFragment.isVisible()){
-            mReportsMapFragment.updateMapCameraView(location);
-        }
+        mReportsMapFragment.updateMapCameraView(location);
     }
 
     @Override
     public void onCarAcceleration(float acceleration) {
-        if(mDashboardFragment.isVisible()){
+        if(mDashboardFragment.isVisible()) {
             mDashboardFragment.updateAccelerometer(acceleration);
         }
+    }
+
+    @Override
+    public void onCrossedSpeedLimit(int speed, Location location) {
+        mReportsMapFragment.addReport(SPEEDING, speed, location);
     }
 
     //------------------------ Fragment Management ------------------------
@@ -178,6 +202,10 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
         }
     }
 
+    @Override
+    public void onMapFragmentReady() {
+        mReportsMapFragment.showSavedEventsOnMap(mCarBlackBoxEngine.getCurrentTravelEvents());
+    }
     //------------------------ Button Init -----------------------------
 
     public void initButton(Button b, final Fragment fragment){
@@ -188,4 +216,6 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
             }
         });
     }
+
+
 }

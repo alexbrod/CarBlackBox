@@ -2,7 +2,6 @@ package alexbrod.carblackbox.ui;
 
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -13,31 +12,31 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.MapsInitializer;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.CameraPosition;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
 
 import alexbrod.carblackbox.R;
+import alexbrod.carblackbox.bl.TravelEvent;
+import alexbrod.carblackbox.utilities.MyUtilities;
+
+import static alexbrod.carblackbox.utilities.MyUtilities.SHARP_TURN;
+import static alexbrod.carblackbox.utilities.MyUtilities.SPEEDING;
+import static alexbrod.carblackbox.utilities.MyUtilities.SUDDEN_BRAKE;
 
 public class ReportsMapFragment extends SupportMapFragment implements OnMapReadyCallback {
-
-    private final int MAX_MARKERS_IN_MAP = 10;
-    private final double ISRAEL_HERZELIA_N_E_LONG = 34.88;
-    private final double ISRAEL_HERZELIA_N_E_LAT = 32.205;
-    private final double ISRAEL_HERZELIA_S_W_LONG = 34.8;
-    private final double ISRAEL_HERZELIA_S_W_LAT = 32.165;
-    private final double MAP_PADDING = 0.01;
+    private static final float DEFAULT_ZOOM = 16;
     private MapView mapView;
     private GoogleMap map;
+    private IMapFragmentEvents mMapFragmentListener;
 
     public ReportsMapFragment() {
         // Required empty public constructor
@@ -50,6 +49,10 @@ public class ReportsMapFragment extends SupportMapFragment implements OnMapReady
         return fragment;
     }
 
+    interface IMapFragmentEvents {
+        void onMapFragmentReady();
+    }
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,12 +62,13 @@ public class ReportsMapFragment extends SupportMapFragment implements OnMapReady
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         super.onCreateView(inflater, container, savedInstanceState);
-        View v = inflater.inflate(R.layout.fragment_map_layout, container, false);
+        //register to map fragment events
 
+        View v = inflater.inflate(R.layout.fragment_map_layout, container, false);
         mapView = (MapView) v.findViewById(R.id.mapView);
         mapView.onCreate(savedInstanceState);
-
         mapView.onResume();// needed to get the map to display immediately
+        mapView.getMapAsync(this);
 
         try {
             MapsInitializer.initialize(getActivity().getApplicationContext());
@@ -72,7 +76,7 @@ public class ReportsMapFragment extends SupportMapFragment implements OnMapReady
             e.printStackTrace();
         }
 
-        mapView.getMapAsync(this);
+
         // Inflate the layout for this fragment
         return v;
     }
@@ -88,6 +92,7 @@ public class ReportsMapFragment extends SupportMapFragment implements OnMapReady
         map = googleMap;
         map.setMapType(GoogleMap.MAP_TYPE_NORMAL);
         enableMyLocation();
+        mMapFragmentListener.onMapFragmentReady();
     }
 
 
@@ -146,7 +151,61 @@ public class ReportsMapFragment extends SupportMapFragment implements OnMapReady
     }
 
     public void updateMapCameraView(Location location){
+        if(!isMapReady()){
+            return;
+        }
         LatLng latLng = new LatLng(location.getLatitude(),location.getLongitude());
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng,16));
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng,DEFAULT_ZOOM));
+    }
+
+    public void addReport(String eventType, double value, Location location) {
+        if(!isMapReady() || location == null){
+            return;
+        }
+        addMarkerToMap(eventType, value, location.getTime(),
+                location.getLatitude(), location.getLongitude());
+    }
+
+    private void addMarkerToMap(String eventType, double value, long timestamp,
+                                double locLat, double locLong) {
+        // create marker
+        MarkerOptions marker = new MarkerOptions();
+        marker.position(new LatLng(locLat, locLong));
+        marker.title("Event:" + eventType);
+        marker.snippet("Date: " + MyUtilities.formatDateTime(timestamp) +
+            " Value: " + String.format("%.1f",value));
+
+        // Changing marker icon
+        switch (eventType){
+            case SPEEDING:
+                marker.icon(BitmapDescriptorFactory.fromResource(R.mipmap.speed_sign));
+                break;
+            case SHARP_TURN:
+                marker.icon(BitmapDescriptorFactory.fromResource(R.mipmap.sharp_turn));
+                break;
+            case SUDDEN_BRAKE:
+                marker.icon(BitmapDescriptorFactory.fromResource(R.mipmap.sudden_break));
+                break;
+        }
+        // adding marker
+        map.addMarker(marker);
+    }
+
+    public void showSavedEventsOnMap(ArrayList<TravelEvent> travelEvents){
+        for (TravelEvent te: travelEvents) {
+            addMarkerToMap(te.getType(),te.getValue(),te.getTimeOccurred(),
+                    te.getLocLat(),te.getLocLong());
+        }
+    }
+
+    public void registerToMapfragmentEvents(IMapFragmentEvents listener){
+        mMapFragmentListener = listener;
+    }
+
+    public boolean isMapReady(){
+        if(map == null){
+            return false;
+        }
+        return true;
     }
 }

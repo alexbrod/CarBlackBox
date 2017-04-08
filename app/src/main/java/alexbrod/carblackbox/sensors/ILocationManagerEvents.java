@@ -10,6 +10,6 @@ import com.google.android.gms.common.api.Status;
 
 public interface ILocationManagerEvents {
     void onLocationResolutionRequired(Status status);
-    void onSpeedChanged(int speed);
+    void onSpeedChanged(int speed, Location location);
     void onLocationChanged(Location location);
 }

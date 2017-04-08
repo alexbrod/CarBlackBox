@@ -33,8 +33,8 @@ public class LocationManager implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, ResultCallback<LocationSettingsResult>,
         LocationListener {
 
-    private static final long LOCATION_REQUEST_INTERVAL = 10000;
-    private static final long LOCATION_REQUEST_FASTEST_INTERVAL = 5000;
+    private static final long LOCATION_REQUEST_INTERVAL = 2000; //ms
+    private static final long LOCATION_REQUEST_FASTEST_INTERVAL = 1000; //ms
 
     private static LocationManager locationManager;
     private GoogleApiClient googleApiClient;
@@ -42,6 +42,7 @@ public class LocationManager implements GoogleApiClient.ConnectionCallbacks,
     private LocationRequest locationRequest;
     private ILocationManagerEvents locationManagerListener;
     private int speed = 0;
+    private Location mLastLocation;
 
     private LocationManager(Context context) {
         // Create an instance of GoogleAPIClient.
@@ -123,7 +124,9 @@ public class LocationManager implements GoogleApiClient.ConnectionCallbacks,
         return googleApiClient.isConnected();
     }
 
-
+    public Location getLastKnownLocation(){
+        return mLastLocation;
+    }
 
     //---------------------Events Location Manager listens--------------------------
     @Override
@@ -173,20 +176,20 @@ public class LocationManager implements GoogleApiClient.ConnectionCallbacks,
 
     @Override
     public void onLocationChanged(Location location) {
+        mLastLocation = location;
         if(locationManagerListener == null){
             return;
         }
         if(location.hasSpeed()){
-            int tmpSpeed = (int)location.getSpeed();
+            int tmpSpeed = (int)(location.getSpeed()*3.6); //convert to km/h
             Log.w(getClass().getSimpleName(),"Speed: " + speed
                 + "," + tmpSpeed);
             if(speed != tmpSpeed){
                 speed = tmpSpeed;
-                locationManagerListener.onSpeedChanged(speed);
+                locationManagerListener.onSpeedChanged(speed, location);
             }
         }
         locationManagerListener.onLocationChanged(location);
-
 
     }
 
