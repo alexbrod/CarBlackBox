@@ -191,6 +191,10 @@ public class ReportsMapFragment extends SupportMapFragment implements OnMapReady
         map.addMarker(marker);
     }
 
+    public void clearEventsFromMap(){
+        map.clear();
+    }
+
     public void showSavedEventsOnMap(ArrayList<TravelEvent> travelEvents){
         for (TravelEvent te: travelEvents) {
             addMarkerToMap(te.getType(),te.getValue(),te.getTimeOccurred(),
@@ -198,7 +202,7 @@ public class ReportsMapFragment extends SupportMapFragment implements OnMapReady
         }
     }
 
-    public void registerToMapfragmentEvents(IMapFragmentEvents listener){
+    public void registerToMapFragmentEvents(IMapFragmentEvents listener){
         mMapFragmentListener = listener;
     }
 

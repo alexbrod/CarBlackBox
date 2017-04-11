@@ -1,5 +1,6 @@
 package alexbrod.carblackbox.db;
 
+import alexbrod.carblackbox.bl.Travel;
 import alexbrod.carblackbox.bl.TravelEvent;
 import alexbrod.carblackbox.db.DbContract.*;
 
@@ -34,6 +35,11 @@ public class DbManager extends SQLiteOpenHelper  {
                     " INNER JOIN " + Travels.TABLE_NAME + " t" +
                     " ON te." + TravelEvents.COL_TRAVEL_ID + "= t." + Travels.COL_START_TIME +
                     " WHERE t." + Travels.COL_START_TIME + " =?";
+
+    private static String[] travelsProjection = {
+            Travels.COL_START_TIME,
+            Travels.COL_END_TIME
+    };
 
 
     private DbManager(Context context){
@@ -106,6 +112,29 @@ public class DbManager extends SQLiteOpenHelper  {
         }
         c.close();
         return travelEvents;
+    }
+
+    public ArrayList<Travel> getLastNumTravels(int num){
+        ArrayList<Travel> travels = new ArrayList<>();
+        String[] selectionArgs = {String.valueOf(num)};
+
+        Cursor c = readableDb.query(
+                Travels.TABLE_NAME,
+                travelsProjection,
+                "ROWID <= ?",
+                selectionArgs,null,null,
+                Travels.COL_START_TIME + " DESC"
+        );
+
+        while(c.moveToNext()) {
+            travels.add(new Travel(
+                    c.getLong(c.getColumnIndex(Travels.COL_START_TIME)),
+                    c.getLong(c.getColumnIndex(Travels.COL_END_TIME))
+            ));
+
+        }
+        c.close();
+        return travels;
     }
 
     public void close(){

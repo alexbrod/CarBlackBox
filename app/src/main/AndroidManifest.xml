@@ -4,18 +4,18 @@
 
     <uses-feature
         android:glEsVersion="0x00020000"
-        android:required="true" >
-    </uses-feature>
+        android:required="true"></uses-feature>
 
-    <permission android:name="alexbrod.minesweeper.permission.MAPS_RECEIVE"
-        android:protectionLevel="signature"/>
+    <permission
+        android:name="alexbrod.minesweeper.permission.MAPS_RECEIVE"
+        android:protectionLevel="signature" />
 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="ANDROID.PERMISSION.BODY_SENSORS" />
-    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES"/>
+    <uses-permission android:name="com.google.android.providers.gsf.permission.READ_GSERVICES" />
 
     <application
         android:allowBackup="true"
@@ -23,13 +23,12 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.NoActionBar">
-
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
-
-        <meta-data android:name="com.google.android.geo.API_KEY"
-            android:value='AIzaSyAhG26ulKlvV0U_kqqMSvrpBff7aFk4uAA'/>
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAhG26ulKlvV0U_kqqMSvrpBff7aFk4uAA" />
 
         <service
             android:name=".sensors.SensorsManagerService"
@@ -37,8 +36,7 @@
 
         <activity
             android:name=".ui.StartMenuActivity"
-            android:screenOrientation="portrait" >
-
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -47,6 +45,9 @@
         </activity>
         <activity
             android:name=".ui.CarViewActivity"
+            android:screenOrientation="portrait"></activity>
+        <activity
+            android:name=".ui.StatsActivity"
             android:screenOrientation="portrait">
 
         </activity>

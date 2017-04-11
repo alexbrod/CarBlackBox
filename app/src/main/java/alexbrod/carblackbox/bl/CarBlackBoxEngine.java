@@ -14,9 +14,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import alexbrod.carblackbox.db.DbManager;
+import alexbrod.carblackbox.sensors.CarLocationManager;
 import alexbrod.carblackbox.sensors.ILocationManagerEvents;
 import alexbrod.carblackbox.sensors.ISensorsEvents;
-import alexbrod.carblackbox.sensors.LocationManager;
 import alexbrod.carblackbox.sensors.SensorsManagerService;
 import alexbrod.carblackbox.ui.ICarBlackBoxEngineListener;
 
@@ -56,7 +56,7 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
     private static CarBlackBoxEngine mCarBlackBoxEngine;
     private SensorsManagerService mSensorsManagerService;
     private ICarBlackBoxEngineListener mUiListener;
-    private LocationManager mLocationManager;
+    private CarLocationManager mCarLocationManager;
     private DbManager mDbManager;
 
 
@@ -145,13 +145,13 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
                         SHARP_TURN,
                         timestamp,
                         -1,
-                        mLocationManager.getLastKnownLocation().getLatitude(),
-                        mLocationManager.getLastKnownLocation().getLongitude());
+                        mCarLocationManager.getLastKnownLocation().getLatitude(),
+                        mCarLocationManager.getLastKnownLocation().getLongitude());
                 Log.w(TAG,"Add TravelEvent " + SHARP_TURN + " time " + timestamp);
                 //TODO: use more interesting function and not a constant
                 if(mUiListener != null){
                     Log.w(TAG,"Turn Left: " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
-                    mUiListener.onSharpTurnLeft(20,mLocationManager.getLastKnownLocation());
+                    mUiListener.onSharpTurnLeft(20, mCarLocationManager.getLastKnownLocation());
                 }
             }
             mStartRecordTurnLeftTime = 0;
@@ -178,13 +178,13 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
                         SHARP_TURN,
                         timestamp,
                         -1,
-                        mLocationManager.getLastKnownLocation().getLatitude(),
-                        mLocationManager.getLastKnownLocation().getLongitude());
+                        mCarLocationManager.getLastKnownLocation().getLatitude(),
+                        mCarLocationManager.getLastKnownLocation().getLongitude());
                 Log.w(TAG,"Add TravelEvent " + SHARP_TURN + " time " + timestamp);
                 //TODO: use more interesting function and not a constant
                 if(mUiListener != null) {
                     Log.w(TAG,"Turn Right " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
-                    mUiListener.onSharpTurnRight(-20,mLocationManager.getLastKnownLocation());
+                    mUiListener.onSharpTurnRight(-20, mCarLocationManager.getLastKnownLocation());
                 }
             }
             mStartRecordTurnRightTime = 0;
@@ -233,12 +233,12 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
                         SUDDEN_BRAKE,
                         timestamp,
                         -1,
-                        mLocationManager.getLastKnownLocation().getLatitude(),
-                        mLocationManager.getLastKnownLocation().getLongitude());
+                        mCarLocationManager.getLastKnownLocation().getLatitude(),
+                        mCarLocationManager.getLastKnownLocation().getLongitude());
                 Log.w(TAG,"Add TravelEvent " + SUDDEN_BRAKE + " time " + timestamp);
                 //TODO: use more interesting function and not a constant
                 if(mUiListener != null) {
-                    mUiListener.onSuddenBreak(20,mLocationManager.getLastKnownLocation());
+                    mUiListener.onSuddenBreak(20, mCarLocationManager.getLastKnownLocation());
                 }
             }
             mStartRecordBrakeTime = 0;
@@ -255,17 +255,17 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
     //-------------------------Location Management--------------------------------
 
     public void initiateLocationManager(Context context){
-        mLocationManager = LocationManager.getInstance(context);
+        mCarLocationManager = CarLocationManager.getInstance(context);
     }
 
     public void startLocationManager(){
-        mLocationManager.registerToLocationManagerEvents(this);
-        mLocationManager.connect();
+        mCarLocationManager.registerToLocationManagerEvents(this);
+        mCarLocationManager.connect();
     }
 
     public void stopLocationManager(){
-        mLocationManager.disconnect();
-        mLocationManager.unregisterFromLocationManagerEvents();
+        mCarLocationManager.disconnect();
+        mCarLocationManager.unregisterFromLocationManagerEvents();
     }
 
     @Override
@@ -284,8 +284,8 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
                         SPEEDING,
                         location.getTime(),
                         -1,
-                        mLocationManager.getLastKnownLocation().getLatitude(),
-                        mLocationManager.getLastKnownLocation().getLongitude());
+                        mCarLocationManager.getLastKnownLocation().getLatitude(),
+                        mCarLocationManager.getLastKnownLocation().getLongitude());
                 Log.w(TAG,"Add TravelEvent " + SPEEDING + " time " + location.getTime());
                 //TODO: use more interesting function and not a constant
                 if(mUiListener != null){

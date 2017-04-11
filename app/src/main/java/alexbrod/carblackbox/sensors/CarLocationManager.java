@@ -1,11 +1,10 @@
 package alexbrod.carblackbox.sensors;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
-import android.content.IntentSender.SendIntentException;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -24,104 +23,132 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
+import static android.location.GpsStatus.GPS_EVENT_STARTED;
+import static android.location.GpsStatus.GPS_EVENT_STOPPED;
+
 
 /**
  * Created by Alex Brod on 3/27/2017.
  */
 
-public class LocationManager implements GoogleApiClient.ConnectionCallbacks,
+public class CarLocationManager implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, ResultCallback<LocationSettingsResult>,
         LocationListener {
 
     private static final long LOCATION_REQUEST_INTERVAL = 2000; //ms
     private static final long LOCATION_REQUEST_FASTEST_INTERVAL = 1000; //ms
+    private static final String TAG = "CarLocationManager";
 
-    private static LocationManager locationManager;
-    private GoogleApiClient googleApiClient;
-    private LocationSettingsRequest.Builder locationSettingsRequestBuilder;
-    private LocationRequest locationRequest;
-    private ILocationManagerEvents locationManagerListener;
-    private int speed = 0;
+    private static CarLocationManager mCarLocationManager;
+    private GoogleApiClient mGoogleApiClient;
+    private LocationSettingsRequest.Builder mLocationSettingsRequestBuilder;
+    private LocationRequest mLocationRequest;
+    private ILocationManagerEvents mLocationManagerListener;
     private Location mLastLocation;
+    private int mSpeed = 0;
 
-    private LocationManager(Context context) {
+    private CarLocationManager(Context context) {
         // Create an instance of GoogleAPIClient.
-        if (googleApiClient == null) {
-            googleApiClient = new GoogleApiClient.Builder(context)
+        if (mGoogleApiClient == null) {
+            mGoogleApiClient = new GoogleApiClient.Builder(context)
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .addApi(LocationServices.API)
                     .build();
         }
+        setGpsListener(context);
 
     }
 
-    public static LocationManager getInstance(Context context) {
-        if (locationManager == null) {
-            locationManager = new LocationManager(context);
+    private void setGpsListener(Context context) {
+        LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG,"No permission to use GPS");
+            return;
         }
-        return locationManager;
+        //this method is deprecated in API level 24, but the application
+        //supports API level 21 users, so this it's used instead
+        //registerGnssStatusCallback(GnssStatus.Callback)
+        lm.addGpsStatusListener(new android.location.GpsStatus.Listener() {
+            public void onGpsStatusChanged(int event) {
+                switch (event) {
+                    case GPS_EVENT_STARTED:
+                        tryStartLocationUpdates();
+                        break;
+                    case GPS_EVENT_STOPPED:
+                        stopLocationUpdates();
+                        break;
+                }
+            }
+        });
+    }
+
+    public static CarLocationManager getInstance(Context context) {
+        if (mCarLocationManager == null) {
+            mCarLocationManager = new CarLocationManager(context);
+        }
+        return mCarLocationManager;
     }
 
     //----------------------Location inner management----------------
     private void createLocationRequest() {
-        locationRequest = new LocationRequest();
-        locationRequest.setInterval(LOCATION_REQUEST_INTERVAL);
-        locationRequest.setFastestInterval(LOCATION_REQUEST_FASTEST_INTERVAL);
-        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-        locationSettingsRequestBuilder = new LocationSettingsRequest.Builder()
-                .addLocationRequest(locationRequest);
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(LOCATION_REQUEST_INTERVAL);
+        mLocationRequest.setFastestInterval(LOCATION_REQUEST_FASTEST_INTERVAL);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        mLocationSettingsRequestBuilder = new LocationSettingsRequest.Builder()
+                .addLocationRequest(mLocationRequest);
     }
 
     private void startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(googleApiClient.getContext(),
+        if (ActivityCompat.checkSelfPermission(mGoogleApiClient.getContext(),
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(googleApiClient.getContext(),
+                && ActivityCompat.checkSelfPermission(mGoogleApiClient.getContext(),
                 Manifest.permission.ACCESS_COARSE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
 
             return;
         }
         LocationServices.FusedLocationApi.requestLocationUpdates(
-                googleApiClient, locationRequest, this);
+                mGoogleApiClient, mLocationRequest, this);
     }
 
 
     private void stopLocationUpdates() {
         if(isConnected()) {
             LocationServices.FusedLocationApi.removeLocationUpdates(
-                    googleApiClient, this);
+                    mGoogleApiClient, this);
         }
     }
 
     private void tryStartLocationUpdates() {
         PendingResult<LocationSettingsResult> result =
-                LocationServices.SettingsApi.checkLocationSettings(googleApiClient,
-                        locationSettingsRequestBuilder.build());
+                LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient,
+                        mLocationSettingsRequestBuilder.build());
         result.setResultCallback(this);
     }
 
     //--------------------Location external management ----------------------
     public void connect() {
-        googleApiClient.connect();
+        mGoogleApiClient.connect();
     }
 
     public void disconnect() {
         stopLocationUpdates();
-        googleApiClient.disconnect();
+        mGoogleApiClient.disconnect();
     }
 
     public void registerToLocationManagerEvents(ILocationManagerEvents listener){
-        locationManagerListener = listener;
+        mLocationManagerListener = listener;
     }
 
     public void unregisterFromLocationManagerEvents() {
-        locationManagerListener = null;
+        mLocationManagerListener = null;
     }
 
     public boolean isConnected(){
-        return googleApiClient.isConnected();
+        return mGoogleApiClient.isConnected();
     }
 
     public Location getLastKnownLocation(){
@@ -139,11 +166,12 @@ public class LocationManager implements GoogleApiClient.ConnectionCallbacks,
 
     @Override
     public void onConnectionSuspended(int i) {
-
+        Log.w(TAG,"Connection suspended");
     }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+        Log.w(TAG,"Connection failed");
     }
 
     @Override
@@ -159,8 +187,8 @@ public class LocationManager implements GoogleApiClient.ConnectionCallbacks,
             case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
                 // Location settings are not satisfied, but this can be fixed
                 // by showing the user a dialog.
-                if(locationManagerListener != null){
-                    locationManagerListener.onLocationResolutionRequired(status);
+                if(mLocationManagerListener != null){
+                    mLocationManagerListener.onLocationResolutionRequired(status);
                 }
                 break;
             case LocationSettingsStatusCodes.NETWORK_ERROR:
@@ -177,19 +205,19 @@ public class LocationManager implements GoogleApiClient.ConnectionCallbacks,
     @Override
     public void onLocationChanged(Location location) {
         mLastLocation = location;
-        if(locationManagerListener == null){
+        if(mLocationManagerListener == null){
             return;
         }
         if(location.hasSpeed()){
             int tmpSpeed = (int)(location.getSpeed()*3.6); //convert to km/h
-            Log.w(getClass().getSimpleName(),"Speed: " + speed
+            Log.w(getClass().getSimpleName(),"Speed: " + mSpeed
                 + "," + tmpSpeed);
-            if(speed != tmpSpeed){
-                speed = tmpSpeed;
-                locationManagerListener.onSpeedChanged(speed, location);
+            if(mSpeed != tmpSpeed){
+                mSpeed = tmpSpeed;
+                mLocationManagerListener.onSpeedChanged(mSpeed, location);
             }
         }
-        locationManagerListener.onLocationChanged(location);
+        mLocationManagerListener.onLocationChanged(location);
 
     }
 

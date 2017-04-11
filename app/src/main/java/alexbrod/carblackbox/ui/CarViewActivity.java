@@ -11,7 +11,6 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.facebook.stetho.Stetho;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 
@@ -58,7 +57,7 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
         mReportsMapFragment = ReportsMapFragment.newInstance();
         mDashboardFragment = DashboardFragment.newInstance();
 
-        mReportsMapFragment.registerToMapfragmentEvents(this);
+        mReportsMapFragment.registerToMapFragmentEvents(this);
 
         initButton(mBtnCarView, mCarViewFragment);
         initButton(mBtnMap, mReportsMapFragment);
@@ -74,14 +73,6 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
         super.onPostCreate(savedInstanceState);
         mCarBlackBoxEngine.bindToSensorsService(this);
         mCarBlackBoxEngine.startLocationManager();
-        //for inspecting sqlite db from chrome://inspect
-        Stetho.initialize(
-                Stetho.newInitializerBuilder(this)
-                        .enableDumpapp(
-                                Stetho.defaultDumperPluginsProvider(this))
-                        .enableWebKitInspector(
-                                Stetho.defaultInspectorModulesProvider(this))
-                        .build());
     }
 
     @Override
