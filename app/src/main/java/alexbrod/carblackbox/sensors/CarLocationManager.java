@@ -3,6 +3,7 @@ package alexbrod.carblackbox.sensors;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
@@ -33,10 +34,10 @@ import static android.location.GpsStatus.GPS_EVENT_STOPPED;
 
 public class CarLocationManager implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, ResultCallback<LocationSettingsResult>,
-        LocationListener {
+        LocationListener, GpsStatus.Listener, android.location.LocationListener {
 
-    private static final long LOCATION_REQUEST_INTERVAL = 2000; //ms
-    private static final long LOCATION_REQUEST_FASTEST_INTERVAL = 1000; //ms
+    private static final long LOCATION_REQUEST_INTERVAL = 500; //ms
+    private static final long LOCATION_REQUEST_FASTEST_INTERVAL = 100; //ms
     private static final String TAG = "CarLocationManager";
 
     private static CarLocationManager mCarLocationManager;
@@ -46,42 +47,23 @@ public class CarLocationManager implements GoogleApiClient.ConnectionCallbacks,
     private ILocationManagerEvents mLocationManagerListener;
     private Location mLastLocation;
     private int mSpeed = 0;
+    private LocationManager mLocationManager;
+    private Context mLocationContext;
 
     private CarLocationManager(Context context) {
+        mLocationContext = context;
         // Create an instance of GoogleAPIClient.
         if (mGoogleApiClient == null) {
-            mGoogleApiClient = new GoogleApiClient.Builder(context)
+            mGoogleApiClient = new GoogleApiClient.Builder(mLocationContext)
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .addApi(LocationServices.API)
                     .build();
         }
-        setGpsListener(context);
+
 
     }
 
-    private void setGpsListener(Context context) {
-        LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG,"No permission to use GPS");
-            return;
-        }
-        //this method is deprecated in API level 24, but the application
-        //supports API level 21 users, so this it's used instead
-        //registerGnssStatusCallback(GnssStatus.Callback)
-        lm.addGpsStatusListener(new android.location.GpsStatus.Listener() {
-            public void onGpsStatusChanged(int event) {
-                switch (event) {
-                    case GPS_EVENT_STARTED:
-                        tryStartLocationUpdates();
-                        break;
-                    case GPS_EVENT_STOPPED:
-                        stopLocationUpdates();
-                        break;
-                }
-            }
-        });
-    }
 
     public static CarLocationManager getInstance(Context context) {
         if (mCarLocationManager == null) {
@@ -91,6 +73,22 @@ public class CarLocationManager implements GoogleApiClient.ConnectionCallbacks,
     }
 
     //----------------------Location inner management----------------
+
+
+    private void setGpsListener() {
+
+        if (ActivityCompat.checkSelfPermission(mLocationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "No permission to use GPS");
+            return;
+        }
+        //this method is deprecated in API level 24, but the application
+        //supports API level 22 users, so it's used instead
+        //registerGnssStatusCallback(GnssStatus.Callback)
+        mLocationManager.addGpsStatusListener(this);
+        //need to register for this updates so the gps status events will work
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,LOCATION_REQUEST_INTERVAL,0,this);
+    }
+
     private void createLocationRequest() {
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(LOCATION_REQUEST_INTERVAL);
@@ -112,13 +110,16 @@ public class CarLocationManager implements GoogleApiClient.ConnectionCallbacks,
         }
         LocationServices.FusedLocationApi.requestLocationUpdates(
                 mGoogleApiClient, mLocationRequest, this);
+        Log.i(TAG, "Location updates started");
     }
 
 
     private void stopLocationUpdates() {
-        if(isConnected()) {
+        if (isConnected()) {
             LocationServices.FusedLocationApi.removeLocationUpdates(
                     mGoogleApiClient, this);
+            Log.w(TAG, "Location updates stopped");
+
         }
     }
 
@@ -127,11 +128,14 @@ public class CarLocationManager implements GoogleApiClient.ConnectionCallbacks,
                 LocationServices.SettingsApi.checkLocationSettings(mGoogleApiClient,
                         mLocationSettingsRequestBuilder.build());
         result.setResultCallback(this);
+        Log.i(TAG, "Trying to establish location updates..");
     }
 
     //--------------------Location external management ----------------------
     public void connect() {
         mGoogleApiClient.connect();
+        mLocationManager = (LocationManager) mLocationContext.getSystemService(Context.LOCATION_SERVICE);
+        setGpsListener();
     }
 
     public void disconnect() {
@@ -139,7 +143,7 @@ public class CarLocationManager implements GoogleApiClient.ConnectionCallbacks,
         mGoogleApiClient.disconnect();
     }
 
-    public void registerToLocationManagerEvents(ILocationManagerEvents listener){
+    public void registerToLocationManagerEvents(ILocationManagerEvents listener) {
         mLocationManagerListener = listener;
     }
 
@@ -147,12 +151,21 @@ public class CarLocationManager implements GoogleApiClient.ConnectionCallbacks,
         mLocationManagerListener = null;
     }
 
-    public boolean isConnected(){
+    public boolean isConnected() {
         return mGoogleApiClient.isConnected();
     }
 
-    public Location getLastKnownLocation(){
-        return mLastLocation;
+    public Location getLastKnownLocation() {
+        if(mLastLocation != null){
+            return mLastLocation;
+        }
+        if (ActivityCompat.checkSelfPermission(mLocationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(mLocationContext, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG,"No Last known location permissions");
+            return null;
+        }else{
+            return mLocationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+        }
     }
 
     //---------------------Events Location Manager listens--------------------------
@@ -171,7 +184,7 @@ public class CarLocationManager implements GoogleApiClient.ConnectionCallbacks,
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        Log.w(TAG,"Connection failed");
+        Log.e(TAG,"Connection failed");
     }
 
     @Override
@@ -209,17 +222,39 @@ public class CarLocationManager implements GoogleApiClient.ConnectionCallbacks,
             return;
         }
         if(location.hasSpeed()){
-            int tmpSpeed = (int)(location.getSpeed()*3.6); //convert to km/h
-            Log.w(getClass().getSimpleName(),"Speed: " + mSpeed
-                + "," + tmpSpeed);
-            if(mSpeed != tmpSpeed){
-                mSpeed = tmpSpeed;
-                mLocationManagerListener.onSpeedChanged(mSpeed, location);
-            }
+            mSpeed = (int)(location.getSpeed()*3.6); //convert to km/h
+            Log.i(TAG,"Speed: " + mSpeed);
+            mLocationManagerListener.onSpeedChanged(mSpeed, location);
         }
         mLocationManagerListener.onLocationChanged(location);
 
     }
 
+    @Override
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+        //not used,
+    }
 
+    @Override
+    public void onProviderEnabled(String s) {
+        //not used
+    }
+
+    @Override
+    public void onProviderDisabled(String s) {
+        //not used
+    }
+
+
+    @Override
+    public void onGpsStatusChanged(int event) {
+        switch (event) {
+            case GPS_EVENT_STARTED:
+                tryStartLocationUpdates();
+                break;
+            case GPS_EVENT_STOPPED:
+                stopLocationUpdates();
+                break;
+        }
+    }
 }

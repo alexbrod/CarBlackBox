@@ -35,7 +35,6 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
     private CarViewFragment mCarViewFragment;
     private ReportsMapFragment mReportsMapFragment;
     private DashboardFragment mDashboardFragment;
-    private boolean mMapFragmetReady;
 
 
     @Override

@@ -2,8 +2,9 @@
     android:id="@+id/spinnerItem"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/darker_gray"
+    android:background="@drawable/spinner_item_shape"
     android:textColor="@android:color/holo_red_dark"
-    android:textAlignment="center">
+    android:textAlignment="center"
+    >
 
 </TextView>

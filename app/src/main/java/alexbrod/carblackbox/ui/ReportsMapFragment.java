@@ -4,6 +4,7 @@ package alexbrod.carblackbox.ui;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Camera;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -12,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
@@ -20,6 +22,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 
 import java.util.ArrayList;
@@ -33,7 +36,9 @@ import static alexbrod.carblackbox.utilities.MyUtilities.SPEEDING;
 import static alexbrod.carblackbox.utilities.MyUtilities.SUDDEN_BRAKE;
 
 public class ReportsMapFragment extends SupportMapFragment implements OnMapReadyCallback {
+    //TODO: Pass those constants as parameters to the fragment
     private static final float DEFAULT_ZOOM = 16;
+    private static final int MAP_PADDING = 10;
     private MapView mapView;
     private GoogleMap map;
     private IMapFragmentEvents mMapFragmentListener;
@@ -196,9 +201,18 @@ public class ReportsMapFragment extends SupportMapFragment implements OnMapReady
     }
 
     public void showSavedEventsOnMap(ArrayList<TravelEvent> travelEvents){
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        int eventsCounter = 0;
         for (TravelEvent te: travelEvents) {
             addMarkerToMap(te.getType(),te.getValue(),te.getTimeOccurred(),
                     te.getLocLat(),te.getLocLong());
+            builder.include(new LatLng(te.getLocLat(),te.getLocLong()));
+            eventsCounter++;
+        }
+        if(eventsCounter > 0){
+            LatLngBounds bounds = builder.build();
+            CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, MAP_PADDING);
+            map.animateCamera(cu);
         }
     }
 

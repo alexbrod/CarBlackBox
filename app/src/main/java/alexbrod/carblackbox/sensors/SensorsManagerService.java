@@ -12,6 +12,8 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import java.util.Date;
+
 import alexbrod.carblackbox.utilities.MyUtilities;
 
 /**
@@ -46,7 +48,7 @@ public class SensorsManagerService extends Service implements SensorEventListene
         try {
             mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             mLinearAccelerationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
-            mSensorManager.registerListener(this, mLinearAccelerationSensor, SensorManager.SENSOR_DELAY_GAME);
+            mSensorManager.registerListener(this, mLinearAccelerationSensor, SensorManager.SENSOR_DELAY_NORMAL);
             Log.d(this.getClass().getSimpleName(), "Registered SensorsManagerService to Sensor Event");
         }catch (NullPointerException e){
             Log.e(this.getClass().getSimpleName(), "One or more sensors are not available");
@@ -81,8 +83,8 @@ public class SensorsManagerService extends Service implements SensorEventListene
         float x = MyUtilities.roundUp(sensorEvent.values[X],1);
         float y = MyUtilities.roundUp(sensorEvent.values[Y],1);
         float z = MyUtilities.roundUp(sensorEvent.values[Z],1);
-        //convert timestamp from nano to micro
-        long timestamp = sensorEvent.timestamp/1000;
+        //convert timestamp from micro to milli
+        long timestamp = sensorUptimeToTimeInMilli(sensorEvent.timestamp);
         if(x < -SENSITIVITY_LEVEL){
             mSensorsEventsListener.onXNegativeAccChange(x,y,z,timestamp);
         }else if(x > SENSITIVITY_LEVEL){
@@ -107,5 +109,10 @@ public class SensorsManagerService extends Service implements SensorEventListene
         }
         mSensorsEventsListener = sensorsEventsListener;
         Log.d(this.getClass().getSimpleName(),"Registered Engine to SensorsManagerService events");
+    }
+
+    private long sensorUptimeToTimeInMilli(long uptimeInNano){
+        return (new Date()).getTime()
+                + (uptimeInNano - System.nanoTime()) / 1000000L;
     }
 }

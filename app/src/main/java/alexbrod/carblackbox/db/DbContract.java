@@ -49,5 +49,23 @@ public final class DbContract {
                 "DROP TABLE IF EXISTS " + TABLE_NAME;
     }
 
+    public static class SensorEvents implements BaseColumns{
+        public static final String TABLE_NAME = "sensor_events";
+        public static final String COL_TIMESTAMP = "timestamp";
+        public static final String COL_TYPE = "type";
+        public static final String COL_AXIS = "axis";
+        public static final String COL_VALUE = "value";
+
+        protected static final String SQL_CREATE =
+                "CREATE TABLE " + TABLE_NAME + "(" +
+                        COL_TIMESTAMP + " INTEGER," +
+                        COL_TYPE + " TEXT," +
+                        COL_AXIS + " TEXT," +
+                        COL_VALUE + " NUMERIC);";
+
+        protected static final String SQL_DELETE =
+                "DROP TABLE IF EXISTS " + TABLE_NAME;
+    }
+
 
 }

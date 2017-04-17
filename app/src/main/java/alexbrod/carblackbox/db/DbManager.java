@@ -1,8 +1,10 @@
 package alexbrod.carblackbox.db;
 
+import alexbrod.carblackbox.bl.CarSensorEvent;
 import alexbrod.carblackbox.bl.Travel;
 import alexbrod.carblackbox.bl.TravelEvent;
 import alexbrod.carblackbox.db.DbContract.*;
+import alexbrod.carblackbox.sensors.ISensorsEvents;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -36,10 +38,11 @@ public class DbManager extends SQLiteOpenHelper  {
                     " ON te." + TravelEvents.COL_TRAVEL_ID + "= t." + Travels.COL_START_TIME +
                     " WHERE t." + Travels.COL_START_TIME + " =?";
 
-    private static String[] travelsProjection = {
-            Travels.COL_START_TIME,
-            Travels.COL_END_TIME
-    };
+    private static String LAST_NUM_TRAVELS_QRY =
+            "SELECT " + Travels.COL_START_TIME + "," +
+                    Travels.COL_END_TIME +
+                    " FROM " + Travels.TABLE_NAME +
+                    " ORDER BY " + Travels.COL_START_TIME + " DESC LIMIT ?";
 
 
     private DbManager(Context context){
@@ -59,12 +62,14 @@ public class DbManager extends SQLiteOpenHelper  {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(Travels.SQL_CREATE);
         db.execSQL(TravelEvents.SQL_CREATE);
+        db.execSQL(SensorEvents.SQL_CREATE);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int i, int i1) {
         db.execSQL(Travels.SQL_DELETE);
         db.execSQL(TravelEvents.SQL_DELETE);
+        db.execSQL(SensorEvents.SQL_DELETE);
         onCreate(db);
     }
 
@@ -118,13 +123,7 @@ public class DbManager extends SQLiteOpenHelper  {
         ArrayList<Travel> travels = new ArrayList<>();
         String[] selectionArgs = {String.valueOf(num)};
 
-        Cursor c = readableDb.query(
-                Travels.TABLE_NAME,
-                travelsProjection,
-                "ROWID <= ?",
-                selectionArgs,null,null,
-                Travels.COL_START_TIME + " DESC"
-        );
+        Cursor c = readableDb.rawQuery(LAST_NUM_TRAVELS_QRY, selectionArgs);
 
         while(c.moveToNext()) {
             travels.add(new Travel(
@@ -135,6 +134,15 @@ public class DbManager extends SQLiteOpenHelper  {
         }
         c.close();
         return travels;
+    }
+
+    public long addSensorEvent(CarSensorEvent event){
+        ContentValues values = new ContentValues();
+        values.put(SensorEvents.COL_TIMESTAMP, event.getTimestamp());
+        values.put(SensorEvents.COL_TYPE, event.getType());
+        values.put(SensorEvents.COL_AXIS, event.getAxis());
+        values.put(SensorEvents.COL_VALUE, event.getValue());
+        return writableDb.insert(SensorEvents.TABLE_NAME, null, values);
     }
 
     public void close(){
