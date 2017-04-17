@@ -22,7 +22,7 @@ import static alexbrod.carblackbox.utilities.MyUtilities.formatDateTime;
 public class StatsActivity extends AppCompatActivity implements ReportsMapFragment.IMapFragmentEvents {
 
     private static final String TAG = "StatsActivity";
-    private static final int TRAVELS_IN_SPINNER = 10;
+    private static final int TRAVELS_IN_SPINNER = 20;
     private Spinner mSpinnerDates;
     private ArrayList<String> mDates;
     private HashMap<String,Long> mDateToLong;
@@ -81,7 +81,7 @@ public class StatsActivity extends AppCompatActivity implements ReportsMapFragme
                             ,fragment.getClass().getSimpleName()).commit();
         }
         else{
-            Log.e(getClass().getSimpleName(),"No fragment container");
+            Log.e(TAG,"No fragment container");
         }
     }
 

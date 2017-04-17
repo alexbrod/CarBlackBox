@@ -1,4 +1,4 @@
-package alexbrod.carblackbox.ui;
+package alexbrod.carblackbox.bl;
 
 import android.location.Location;
 

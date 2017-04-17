@@ -16,6 +16,7 @@ import com.google.android.gms.location.LocationSettingsStatusCodes;
 
 import alexbrod.carblackbox.R;
 import alexbrod.carblackbox.bl.CarBlackBoxEngine;
+import alexbrod.carblackbox.bl.ICarBlackBoxEngineListener;
 
 import static alexbrod.carblackbox.utilities.MyUtilities.SHARP_TURN;
 import static alexbrod.carblackbox.utilities.MyUtilities.SPEEDING;
@@ -147,7 +148,7 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
                     this,
                     LocationSettingsStatusCodes.RESOLUTION_REQUIRED);
         } catch (IntentSender.SendIntentException e) {
-            Log.e(this.getClass().getSimpleName(),"Location resolution error");
+            Log.e(TAG,"Location resolution error");
         }
     }
 
@@ -188,7 +189,7 @@ public class CarViewActivity extends AppCompatActivity implements ICarBlackBoxEn
                             ,fragment.getClass().getSimpleName()).commit();
         }
         else{
-            Log.e(getClass().getSimpleName(),"No fragment container");
+            Log.e(TAG,"No fragment container");
         }
     }
 

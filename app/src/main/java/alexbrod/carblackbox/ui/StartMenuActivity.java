@@ -16,14 +16,12 @@ public class StartMenuActivity extends Activity  {
 
     private Button mBtnDrive;
     private Button mBtnStats;
-    private CarBlackBoxEngine carBlackBoxEngine;
     //-----------------------Activity lifecycle methods ---------------------------
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_start_menu);
-        carBlackBoxEngine = CarBlackBoxEngine.getInstance();
 
 
         mBtnDrive = (Button)findViewById(R.id.btnDrive);

@@ -18,7 +18,6 @@ import alexbrod.carblackbox.sensors.CarLocationManager;
 import alexbrod.carblackbox.sensors.ILocationManagerEvents;
 import alexbrod.carblackbox.sensors.ISensorsEvents;
 import alexbrod.carblackbox.sensors.SensorsManagerService;
-import alexbrod.carblackbox.ui.ICarBlackBoxEngineListener;
 
 import static alexbrod.carblackbox.utilities.MyUtilities.SHARP_TURN;
 import static alexbrod.carblackbox.utilities.MyUtilities.SPEEDING;
@@ -33,12 +32,11 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
     private static final String TAG = "CarBlackBoxEngine";
     private static final float BRAKE_SENSITIVITY = 5;
     private static final float TURN_ACC_SENSITIVITY = 3;
-    private static final int EVENT_FILTER_THRESHOLD = 10;
-    private static final long MINIMAL_BRAKE_TIME = 2000; //milli-sec
-    private static final long MINIMAL_TURN_TIME = 2000;  //milli-sec
-    private static final int SPEED_LIMIT = 80;
+    private static final long MINIMAL_BRAKE_TIME = 3000; //milli-sec
+    private static final long MINIMAL_TURN_TIME = 3000;  //milli-sec
     private static final long MINIMAL_SPEED_TIME = 5000;  //milli-sec;
-    private static final int FILTER_NUM = 10;
+    private static final int EVENT_FILTER_THRESHOLD = 3;
+    private static final int SPEED_LIMIT = 60;
     private int mZNegEventFilterCounter = 0;
     private long mStartRecordTurnLeftTime = 0;
     private long mStartRecordTurnRightTime = 0;
@@ -56,7 +54,7 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
 
     private static CarBlackBoxEngine mCarBlackBoxEngine;
     private SensorsManagerService mSensorsManagerService;
-    private ICarBlackBoxEngineListener mUiListener;
+    private ICarBlackBoxEngineListener mEngineEventsListener;
     private CarLocationManager mCarLocationManager;
     private DbManager mDbManager;
     private int XPCounterFilter = 0;
@@ -81,14 +79,14 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
         mDbManager = DbManager.getInstance(context);
         mTravelStartTime = Calendar.getInstance().getTimeInMillis();
         mDbManager.addTravel(mTravelStartTime,-1);
-        Log.w(TAG,"Travel added: " + mTravelStartTime);
+        Log.i(TAG,"Travel added: " + mTravelStartTime);
     }
 
     public void disconnectDb(){
         int rowUpdated;
         rowUpdated = mDbManager.updateTravelEndTime(mTravelStartTime,
                 Calendar.getInstance().getTimeInMillis());
-        Log.w(TAG,"Travel: " + mTravelStartTime + " updated " + rowUpdated );
+        Log.i(TAG,"Travel: " + mTravelStartTime + " updated " + rowUpdated );
         mDbManager.close();
     }
 
@@ -102,12 +100,12 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
     }
 
     public void registerToEngineEvents(ICarBlackBoxEngineListener listener){
-        mUiListener = listener;
-        Log.w(TAG,"Another listener added to engine events");
+        mEngineEventsListener = listener;
+        Log.i(TAG,"Listener added to engine events");
     }
 
     public void unregisterFromEngineEvents(){
-        mUiListener = null;
+        mEngineEventsListener = null;
     }
 
     public ArrayList<TravelEvent> getCurrentTravelEvents(){
@@ -120,7 +118,7 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
         mSensorsManagerService = ((SensorsManagerService.LocalBinder)iBinder).getService();
         mSensorsManagerService.registerToSensorsEvents(this);
-        Log.w(TAG,"Engine connected to SensorsManagerService");
+        Log.i(TAG,"Engine connected to SensorsManagerService");
 
     }
 
@@ -133,13 +131,13 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
 
     @Override
     public void onSensorsMissing() {
-        Log.e(this.getClass().getSimpleName(),"One or more sensors are missing!");
+        Log.e(TAG,"One or more sensors are missing!");
     }
 
     @Override
     public void onXNegativeAccChange(float x, float y, float z, long timestamp) {
-        if(XNCounterFilter == FILTER_NUM){
-            Log.w(TAG,"onXNegativeAccChange: " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
+        if(XNCounterFilter == EVENT_FILTER_THRESHOLD){
+            Log.i(TAG,"onXNegativeAccChange: " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
             mDbManager.addSensorEvent(new CarSensorEvent(timestamp,
                     "accelerometer",
                     "x_negative",
@@ -159,11 +157,11 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
                         -1,
                         mCarLocationManager.getLastKnownLocation().getLatitude(),
                         mCarLocationManager.getLastKnownLocation().getLongitude());
-                Log.w(TAG,"Add TravelEvent " + SHARP_TURN + " time " + timestamp);
+                Log.i(TAG,"Add TravelEvent " + SHARP_TURN + " time " + timestamp);
                 //TODO: use more interesting function and not a constant
-                if(mUiListener != null){
-                    Log.w(TAG,"Turn Left: " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
-                    mUiListener.onSharpTurnLeft(20, mCarLocationManager.getLastKnownLocation());
+                if(mEngineEventsListener != null){
+                    Log.i(TAG,"Turn Left: " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
+                    mEngineEventsListener.onSharpTurnLeft(20, mCarLocationManager.getLastKnownLocation());
                 }
             }
             mStartRecordTurnLeftTime = 0;
@@ -179,8 +177,8 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
 
     @Override
     public void onXPositiveAccChange(float x, float y, float z, long timestamp) {
-        if(XPCounterFilter == FILTER_NUM){
-            Log.w(TAG,"onXPositiveAccChange: " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
+        if(XPCounterFilter == EVENT_FILTER_THRESHOLD){
+            Log.i(TAG,"onXPositiveAccChange: " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
             mDbManager.addSensorEvent(new CarSensorEvent(timestamp,
                     "accelerometer",
                     "x_positive",
@@ -200,11 +198,11 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
                         -1,
                         mCarLocationManager.getLastKnownLocation().getLatitude(),
                         mCarLocationManager.getLastKnownLocation().getLongitude());
-                Log.w(TAG,"Add TravelEvent " + SHARP_TURN + " time " + timestamp);
+                Log.i(TAG,"Add TravelEvent " + SHARP_TURN + " time " + timestamp);
                 //TODO: use more interesting function and not a constant
-                if(mUiListener != null) {
-                    Log.w(TAG,"Turn Right " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
-                    mUiListener.onSharpTurnRight(-20, mCarLocationManager.getLastKnownLocation());
+                if(mEngineEventsListener != null) {
+                    Log.i(TAG,"Turn Right " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
+                    mEngineEventsListener.onSharpTurnRight(-20, mCarLocationManager.getLastKnownLocation());
                 }
             }
             mStartRecordTurnRightTime = 0;
@@ -232,8 +230,8 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
     public void onZNegativeAccChange(float x, float y, float z, long timestamp) {
         if(mZNegEventFilterCounter == EVENT_FILTER_THRESHOLD){
             mZNegEventFilterCounter = 0;
-            if(mUiListener != null) {
-                mUiListener.onCarAcceleration(z);
+            if(mEngineEventsListener != null) {
+                mEngineEventsListener.onCarAcceleration(z);
             }
         }
         mZNegEventFilterCounter++;
@@ -243,8 +241,8 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
     @Override
     public void onZPositiveAccChange(float x, float y, float z, long timestamp) {
 
-        if(ZPCounterFilter == FILTER_NUM){
-            Log.w(TAG,"onZPositiveAccChange: " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
+        if(ZPCounterFilter == EVENT_FILTER_THRESHOLD){
+            Log.i(TAG,"onZPositiveAccChange: " + timestamp + " x:" + x + ",y:" + y + ",z:" + z);
             mDbManager.addSensorEvent(new CarSensorEvent(timestamp,
                     "accelerometer",
                     "z_positive",
@@ -264,10 +262,10 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
                         -1,
                         mCarLocationManager.getLastKnownLocation().getLatitude(),
                         mCarLocationManager.getLastKnownLocation().getLongitude());
-                Log.w(TAG,"Add TravelEvent " + SUDDEN_BRAKE + " time " + timestamp);
+                Log.i(TAG,"Add TravelEvent " + SUDDEN_BRAKE + " time " + timestamp);
                 //TODO: use more interesting function and not a constant
-                if(mUiListener != null) {
-                    mUiListener.onSuddenBreak(20, mCarLocationManager.getLastKnownLocation());
+                if(mEngineEventsListener != null) {
+                    mEngineEventsListener.onSuddenBreak(20, mCarLocationManager.getLastKnownLocation());
                 }
             }
             mStartRecordBrakeTime = 0;
@@ -299,7 +297,7 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
 
     @Override
     public void onLocationResolutionRequired(Status status) {
-        mUiListener.onLocationResolutionRequired(status);
+        mEngineEventsListener.onLocationResolutionRequired(status);
     }
 
     @Override
@@ -320,8 +318,8 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
                         mCarLocationManager.getLastKnownLocation().getLatitude(),
                         mCarLocationManager.getLastKnownLocation().getLongitude());
                 Log.w(TAG,"Add TravelEvent " + SPEEDING + " time " + location.getTime());
-                if(mUiListener != null){
-                    mUiListener.onCrossedSpeedLimit(speed, location);
+                if(mEngineEventsListener != null){
+                    mEngineEventsListener.onCrossedSpeedLimit(speed, location);
                 }
             }
             mStartRecordSpeedTime = 0;
@@ -334,15 +332,15 @@ public class CarBlackBoxEngine implements ISensorsEvents, ServiceConnection,
             mUnderSpeedLimitCounter++;
         }
 
-        if(mUiListener != null) {
-            mUiListener.onSpeedChanged(speed);
+        if(mEngineEventsListener != null) {
+            mEngineEventsListener.onSpeedChanged(speed);
         }
     }
 
     @Override
     public void onLocationChanged(Location location) {
-        if(mUiListener != null) {
-            mUiListener.onLocationChanged(location);
+        if(mEngineEventsListener != null) {
+            mEngineEventsListener.onLocationChanged(location);
         }
     }
 

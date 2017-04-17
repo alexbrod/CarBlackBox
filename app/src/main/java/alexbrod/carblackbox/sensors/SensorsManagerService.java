@@ -22,6 +22,7 @@ import alexbrod.carblackbox.utilities.MyUtilities;
 
 public class SensorsManagerService extends Service implements SensorEventListener {
     public static final float SENSITIVITY_LEVEL = 1; //Acceleration
+    private static final String TAG = "SensorsManagerService";
     private static int X = 0;
     private static int Y = 1;
     private static int Z = 2;
@@ -30,7 +31,7 @@ public class SensorsManagerService extends Service implements SensorEventListene
     private SensorManager mSensorManager;
     private Sensor mLinearAccelerationSensor;
 
-    //TODO: create seperate thread to process sensor data
+    //TODO: create separate thread to process sensor data
     //TODO: address application with broadcast messages
 
     public class LocalBinder extends Binder {
@@ -49,9 +50,9 @@ public class SensorsManagerService extends Service implements SensorEventListene
             mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             mLinearAccelerationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
             mSensorManager.registerListener(this, mLinearAccelerationSensor, SensorManager.SENSOR_DELAY_NORMAL);
-            Log.d(this.getClass().getSimpleName(), "Registered SensorsManagerService to Sensor Event");
+            Log.i(TAG, "Registered SensorsManagerService to Sensor Event");
         }catch (NullPointerException e){
-            Log.e(this.getClass().getSimpleName(), "One or more sensors are not available");
+            Log.e(TAG, "One or more sensors are not available");
         }
     }
 
@@ -59,7 +60,7 @@ public class SensorsManagerService extends Service implements SensorEventListene
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        Log.d(this.getClass().getSimpleName(),"In onBind");
+        Log.i(TAG,"In onBind");
 
         return mIBinder;
     }
@@ -68,7 +69,7 @@ public class SensorsManagerService extends Service implements SensorEventListene
 
     @Override
     public boolean onUnbind(Intent intent){
-        Log.d(this.getClass().getSimpleName(),"In onUnBind");
+        Log.i(TAG,"In onUnBind");
         super.onUnbind(intent);
         mSensorManager.unregisterListener(this);
         return false;
@@ -99,7 +100,6 @@ public class SensorsManagerService extends Service implements SensorEventListene
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
-        Log.d(this.getClass().getSimpleName(),"accuracy changed");
 
     }
 
@@ -108,7 +108,7 @@ public class SensorsManagerService extends Service implements SensorEventListene
             return;
         }
         mSensorsEventsListener = sensorsEventsListener;
-        Log.d(this.getClass().getSimpleName(),"Registered Engine to SensorsManagerService events");
+        Log.i(TAG,"Registered Engine to SensorsManagerService events");
     }
 
     private long sensorUptimeToTimeInMilli(long uptimeInNano){

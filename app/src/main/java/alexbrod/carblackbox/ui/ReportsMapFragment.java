@@ -38,7 +38,7 @@ import static alexbrod.carblackbox.utilities.MyUtilities.SUDDEN_BRAKE;
 public class ReportsMapFragment extends SupportMapFragment implements OnMapReadyCallback {
     //TODO: Pass those constants as parameters to the fragment
     private static final float DEFAULT_ZOOM = 16;
-    private static final int MAP_PADDING = 10;
+    private static final int MAP_PADDING = 200;
     private MapView mapView;
     private GoogleMap map;
     private IMapFragmentEvents mMapFragmentListener;
@@ -80,8 +80,6 @@ public class ReportsMapFragment extends SupportMapFragment implements OnMapReady
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-
         // Inflate the layout for this fragment
         return v;
     }

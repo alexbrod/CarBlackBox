@@ -30,12 +30,10 @@ public class CarViewFragment extends Fragment  {
     private TextView mBottomArc;
     private TextView mLeftArc;
     private TextView mRightArc;
-    private CarBlackBoxEngine carBlackBoxEngine;
 
 
     public CarViewFragment() {
         // Required empty public constructor
-        carBlackBoxEngine = CarBlackBoxEngine.getInstance();
     }
 
     public static CarViewFragment newInstance() {
